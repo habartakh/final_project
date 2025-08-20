@@ -14,6 +14,8 @@ find_package(moveit_ros_planning_interface REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
 find_package(moveit_msgs REQUIRED)
 find_package(geometric_shapes REQUIRED)
+find_package(yaml-cpp REQUIRED)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -34,11 +36,21 @@ ament_target_dependencies(add_objects_planning_scene
   rclcpp
   moveit_ros_planning_interface
   geometric_shapes
+  yaml-cpp
 )
+# Add the linker flag otherwise yaml library wont work
+target_link_libraries(add_objects_planning_scene ${YAML_CPP_LIBRARIES})
+
 
 install(TARGETS
    add_objects_planning_scene
    DESTINATION lib/${PROJECT_NAME}
+)
+
+# install the config files
+install(DIRECTORY
+  config
+  DESTINATION share/${PROJECT_NAME}/
 )
 
 ament_package()

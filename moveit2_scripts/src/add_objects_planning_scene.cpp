@@ -1,3 +1,5 @@
+#include "ament_index_cpp/get_package_share_directory.hpp"
+#include <filesystem> // Include the filesystem library
 #include <geometric_shapes/mesh_operations.h>
 #include <geometric_shapes/shape_operations.h>
 #include <geometric_shapes/shapes.h>
@@ -7,129 +9,104 @@
 #include <rclcpp/rclcpp.hpp>
 #include <shape_msgs/msg/mesh.hpp>
 #include <shape_msgs/msg/solid_primitive.hpp>
+#include <yaml-cpp/yaml.h>
 
 class PlanningSceneExample : public rclcpp::Node {
 public:
   PlanningSceneExample() : Node("planning_scene_example") {
     planning_scene_interface_ =
         std::make_shared<moveit::planning_interface::PlanningSceneInterface>();
-    addCollisionObjects(*planning_scene_interface_);
+
+    // Add the collision objects declared in YAML file to the planning scene
+    addCollisionObjectsFromYAML(*planning_scene_interface_,
+                                "collision_objects.yaml");
   }
 
 private:
   std::shared_ptr<moveit::planning_interface::PlanningSceneInterface>
       planning_scene_interface_;
 
-  void
-  addCollisionObjects(moveit::planning_interface::PlanningSceneInterface &psi) {
-    std::vector<moveit_msgs::msg::CollisionObject> collision_objects(4);
+  // Extract the objects info from the YAML file and add them to the
+  // planning scene
+  void addCollisionObjectsFromYAML(
+      moveit::planning_interface::PlanningSceneInterface &psi,
+      const std::string &yaml_file_name) {
 
-    collision_objects[0].id = "wall";
-    collision_objects[0].header.frame_id = "world";
+    // Get the package directory at runtime
+    std::string package_share_directory =
+        ament_index_cpp::get_package_share_directory(
+            "moveit2_scripts"); // Replace with your package name
 
-    shape_msgs::msg::SolidPrimitive box;
-    box.type = shape_msgs::msg::SolidPrimitive::BOX;
-    box.dimensions = {2.0, 0.03, 2.0};
-    // IMPORTANT: The poses are RELATIVE to the position of the robot arm
-    // Since regardless of its coordinates in the Gazebo world, the robot arm is
-    // always paced at coordinates (0,0,0) in the planning scene
-    geometry_msgs::msg::Pose pose;
-    pose.position.x = 0.3;
-    pose.position.y = -0.56;
-    pose.position.z = -0.03;
-    pose.orientation.w = 1.0;
+    std::string yaml_file_path =
+        package_share_directory + "/config/" + yaml_file_name;
 
-    collision_objects[0].primitives.push_back(box);
-    collision_objects[0].primitive_poses.push_back(pose);
-    collision_objects[0].operation = collision_objects[0].ADD;
+    // Load the YAML File
+    YAML::Node config = YAML::LoadFile(yaml_file_path);
+    const auto &objects = config["collision_objects"];
 
-    /***************************** Table **************************************/
-    collision_objects[1].id = "table";
-    collision_objects[1].header.frame_id = "world";
+    // Container of all the collision objects to be added to the scene
+    std::vector<moveit_msgs::msg::CollisionObject> collision_objects;
 
-    shape_msgs::msg::SolidPrimitive box1;
-    box1.type = shape_msgs::msg::SolidPrimitive::BOX;
-    box1.dimensions = {0.85, 1.81, 0.05};
-    // IMPORTANT: The poses are RELATIVE to the position of the robot arm
-    // Since regardless of its coordinates in the Gazebo world, the robot arm is
-    // always paced at coordinates (0,0,0) in the planning scene
-    geometry_msgs::msg::Pose pose1;
-    pose1.position.x = 0.3;
-    pose1.position.y = 0.36;
-    pose1.position.z = -0.03;
-    pose1.orientation.w = 1.0;
+    for (const auto &obj : objects) {
+      moveit_msgs::msg::CollisionObject co;
+      co.id = obj["id"].as<std::string>();
+      co.header.frame_id = "world";
 
-    collision_objects[1].primitives.push_back(box1);
-    collision_objects[1].primitive_poses.push_back(pose1);
-    collision_objects[1].operation = collision_objects[1].ADD;
+      const std::string type = obj["type"].as<std::string>();
+      const auto position = obj["position"].as<std::vector<double>>();
+      const auto orientation = obj["orientation"].as<std::vector<double>>();
 
-    /***************************Barista Bot*************************/
-    collision_objects[2].id = "barista_bot";
-    collision_objects[2].header.frame_id = "world";
+      // IMPORTANT: The poses are RELATIVE to the position of the robot arm
+      // Since regardless of its coordinates in the Gazebo world, the robot arm
+      // is always paced at coordinates (0,0,0) in the planning scene
+      geometry_msgs::msg::Pose pose;
+      pose.position.x = position[0];
+      pose.position.y = position[1];
+      pose.position.z = position[2];
+      pose.orientation.x = orientation[0];
+      pose.orientation.y = orientation[1];
+      pose.orientation.z = orientation[2];
+      pose.orientation.w = orientation[3];
 
-    // shape_msgs::msg::SolidPrimitive box2;
+      // The object is rendered differently depending on its geometry
+      // The wall and table are simple boxes while the other objects are loaded
+      // by their meshes
+      if (type == "box") {
+        shape_msgs::msg::SolidPrimitive box;
+        box.type = shape_msgs::msg::SolidPrimitive::BOX;
+        std::vector<double> dims = obj["dimensions"].as<std::vector<double>>();
+        box.dimensions.assign(dims.begin(), dims.end());
+        co.primitives.push_back(box);
+        co.primitive_poses.push_back(pose);
+      }
 
-    // Use a mesh instead of a simple collision object
-    shapes::Mesh *m = shapes::createMeshFromResource(
-        "package://the_construct_office_gazebo/models/barista_model/meshes/"
-        "TOP_fixed_color.dae");
-    shapes::ShapeMsg mesh_msg_variant;
-    shapes::constructMsgFromShape(m, mesh_msg_variant);
+      else if (type == "mesh") {
+        const std::string mesh_path = obj["mesh_path"].as<std::string>();
+        shapes::Mesh *m = shapes::createMeshFromResource(mesh_path);
+        if (!m) {
+          RCLCPP_WARN(rclcpp::get_logger("add_objects"),
+                      "Failed to load mesh: %s", mesh_path.c_str());
+          continue;
+        }
 
-    // Extract the mesh from the variant
-    shape_msgs::msg::Mesh mesh_msg =
-        boost::get<shape_msgs::msg::Mesh>(mesh_msg_variant);
+        shapes::ShapeMsg mesh_msg_variant;
+        shapes::constructMsgFromShape(m, mesh_msg_variant);
+        shape_msgs::msg::Mesh mesh_msg =
+            boost::get<shape_msgs::msg::Mesh>(mesh_msg_variant);
 
-    geometry_msgs::msg::Pose pose2;
-    pose2.position.x = -0.26;
-    pose2.position.y = 0.04;
-    pose2.position.z = -0.63;
+        co.meshes.push_back(mesh_msg);
+        co.mesh_poses.push_back(pose);
+        delete m;
+      }
 
-    pose2.orientation.x = 0.0;
-    pose2.orientation.y = 0.0;
-    pose2.orientation.z = 0.7071;
-    pose2.orientation.w = 0.7071;
-
-    collision_objects[2].meshes.push_back(mesh_msg);
-    collision_objects[2].mesh_poses.push_back(pose2);
-    collision_objects[2].operation = collision_objects[2].ADD;
-
-    /***************************Coffe Machine*************************/
-    collision_objects[3].id = "coffee_machine";
-    collision_objects[3].header.frame_id = "world";
-
-    // shape_msgs::msg::SolidPrimitive box2;
-
-    // Use a mesh instead of a simple collision object
-    shapes::Mesh *m1 = shapes::createMeshFromResource(
-        "package://the_construct_office_gazebo/models/coffee_machine/meshes/"
-        "cafeteria.dae");
-    shapes::ShapeMsg mesh_msg_variant1;
-    shapes::constructMsgFromShape(m1, mesh_msg_variant1);
-
-    // Extract the mesh from the variant
-    shape_msgs::msg::Mesh mesh_msg1 =
-        boost::get<shape_msgs::msg::Mesh>(mesh_msg_variant1);
-
-    geometry_msgs::msg::Pose pose3;
-    pose3.position.x = 0.1;
-    pose3.position.y = 0.86;
-    pose3.position.z = -0.03;
-
-    pose3.orientation.x = 0.0;
-    pose3.orientation.y = 0.0;
-    pose3.orientation.z = 0.7071;
-    pose3.orientation.w = 0.7071;
-
-    collision_objects[3].meshes.push_back(mesh_msg1);
-    collision_objects[3].mesh_poses.push_back(pose3);
-    collision_objects[3].operation = collision_objects[3].ADD;
-
-    /**************************************************************/
+      co.operation = co.ADD;
+      collision_objects.push_back(co);
+    }
 
     psi.applyCollisionObjects(collision_objects);
-    RCLCPP_INFO(this->get_logger(),
-                "Added collision object to planning scene.");
+    RCLCPP_INFO(rclcpp::get_logger("add_objects"),
+                "Added %zu collision objects from YAML",
+                collision_objects.size());
   }
 };
 

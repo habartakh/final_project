@@ -1,0 +1,26 @@
+collision_objects:
+  - id: wall
+    type: box
+    dimensions: [2.0, 0.03, 2.0]
+    mesh_path: ""
+    position: [0.3, -0.56, -0.03]
+    orientation: [0.0, 0.0, 0.0, 1.0]
+
+  - id: table
+    type: box
+    dimensions: [0.85, 1.81, 0.05]
+    mesh_path: ""
+    position: [0.3, 0.36, -0.03]
+    orientation: [0.0, 0.0, 0.0, 1.0]
+
+  - id: barista_bot
+    type: mesh
+    mesh_path: "package://the_construct_office_gazebo/models/barista_model/meshes/TOP_fixed_color.dae"
+    position: [-0.26, 0.04, -0.63]
+    orientation: [0.0, 0.0, 0.7071, 0.7071]
+
+  - id: coffee_machine
+    type: mesh
+    mesh_path: "package://the_construct_office_gazebo/models/coffee_machine/meshes/cafeteria.dae"
+    position: [0.1, 0.86, -0.03]
+    orientation: [0.0, 0.0, 0.7071, 0.7071]
