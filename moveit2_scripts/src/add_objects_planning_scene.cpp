@@ -22,7 +22,7 @@ private:
 
   void
   addCollisionObjects(moveit::planning_interface::PlanningSceneInterface &psi) {
-    std::vector<moveit_msgs::msg::CollisionObject> collision_objects(3);
+    std::vector<moveit_msgs::msg::CollisionObject> collision_objects(4);
 
     collision_objects[0].id = "wall";
     collision_objects[0].header.frame_id = "world";
@@ -80,21 +80,52 @@ private:
     shape_msgs::msg::Mesh mesh_msg =
         boost::get<shape_msgs::msg::Mesh>(mesh_msg_variant);
 
-    // shape_msgs::msg::Mesh mesh_msg;
-    // shapes::constructMsgFromShape(m, mesh_msg);
-
-    // box2.type = shape_msgs::msg::SolidPrimitive::BOX;
-    // box2.dimensions = {0.85, 1.81, 0.05};
-
     geometry_msgs::msg::Pose pose2;
     pose2.position.x = -0.26;
     pose2.position.y = 0.04;
     pose2.position.z = -0.63;
-    pose2.orientation.w = 1.0;
+
+    pose2.orientation.x = 0.0;
+    pose2.orientation.y = 0.0;
+    pose2.orientation.z = 0.7071;
+    pose2.orientation.w = 0.7071;
 
     collision_objects[2].meshes.push_back(mesh_msg);
     collision_objects[2].mesh_poses.push_back(pose2);
     collision_objects[2].operation = collision_objects[2].ADD;
+
+    /***************************Coffe Machine*************************/
+    collision_objects[3].id = "coffee_machine";
+    collision_objects[3].header.frame_id = "world";
+
+    // shape_msgs::msg::SolidPrimitive box2;
+
+    // Use a mesh instead of a simple collision object
+    shapes::Mesh *m1 = shapes::createMeshFromResource(
+        "package://the_construct_office_gazebo/models/coffee_machine/meshes/"
+        "cafeteria.dae");
+    shapes::ShapeMsg mesh_msg_variant1;
+    shapes::constructMsgFromShape(m1, mesh_msg_variant1);
+
+    // Extract the mesh from the variant
+    shape_msgs::msg::Mesh mesh_msg1 =
+        boost::get<shape_msgs::msg::Mesh>(mesh_msg_variant1);
+
+    geometry_msgs::msg::Pose pose3;
+    pose3.position.x = 0.1;
+    pose3.position.y = 0.86;
+    pose3.position.z = -0.03;
+
+    pose3.orientation.x = 0.0;
+    pose3.orientation.y = 0.0;
+    pose3.orientation.z = 0.7071;
+    pose3.orientation.w = 0.7071;
+
+    collision_objects[3].meshes.push_back(mesh_msg1);
+    collision_objects[3].mesh_poses.push_back(pose3);
+    collision_objects[3].operation = collision_objects[3].ADD;
+
+    /**************************************************************/
 
     psi.applyCollisionObjects(collision_objects);
     RCLCPP_INFO(this->get_logger(),
