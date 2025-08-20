@@ -18,7 +18,7 @@ private:
 
   void
   addCollisionObjects(moveit::planning_interface::PlanningSceneInterface &psi) {
-    std::vector<moveit_msgs::msg::CollisionObject> collision_objects(1);
+    std::vector<moveit_msgs::msg::CollisionObject> collision_objects(2);
 
     collision_objects[0].id = "wall";
     collision_objects[0].header.frame_id = "world";
@@ -38,6 +38,26 @@ private:
     collision_objects[0].primitives.push_back(box);
     collision_objects[0].primitive_poses.push_back(pose);
     collision_objects[0].operation = collision_objects[0].ADD;
+
+    /***************************** Table **************************************/
+    collision_objects[1].id = "table";
+    collision_objects[1].header.frame_id = "world";
+
+    shape_msgs::msg::SolidPrimitive box1;
+    box1.type = shape_msgs::msg::SolidPrimitive::BOX;
+    box1.dimensions = {0.85, 1.81, 0.05};
+    // IMPORTANT: The poses are RELATIVE to the position of the robot arm
+    // Since regardless of its coordinates in the Gazebo world, the robot arm is
+    // always paced at coordinates (0,0,0) in the planning scene
+    geometry_msgs::msg::Pose pose1;
+    pose1.position.x = 0.3;
+    pose1.position.y = 0.36;
+    pose1.position.z = -0.03;
+    pose1.orientation.w = 1.0;
+
+    collision_objects[1].primitives.push_back(box1);
+    collision_objects[1].primitive_poses.push_back(pose1);
+    collision_objects[1].operation = collision_objects[1].ADD;
 
     psi.applyCollisionObjects(collision_objects);
     RCLCPP_INFO(this->get_logger(),
