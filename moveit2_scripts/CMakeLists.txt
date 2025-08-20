@@ -13,7 +13,6 @@ find_package(moveit_ros_planning REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
 find_package(moveit_msgs REQUIRED)
-find_package(object_detection REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -26,5 +25,18 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+
+add_executable(add_objects_planning_scene src/add_objects_planning_scene.cpp)
+target_include_directories(add_objects_planning_scene PUBLIC include)
+ament_target_dependencies(add_objects_planning_scene
+  rclcpp
+  moveit_ros_planning_interface
+)
+
+install(TARGETS
+   add_objects_planning_scene
+   DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_package()
