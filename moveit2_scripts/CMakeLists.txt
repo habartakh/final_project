@@ -13,6 +13,7 @@ find_package(moveit_ros_planning REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
 find_package(moveit_msgs REQUIRED)
+find_package(geometric_shapes REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -32,6 +33,7 @@ target_include_directories(add_objects_planning_scene PUBLIC include)
 ament_target_dependencies(add_objects_planning_scene
   rclcpp
   moveit_ros_planning_interface
+  geometric_shapes
 )
 
 install(TARGETS
