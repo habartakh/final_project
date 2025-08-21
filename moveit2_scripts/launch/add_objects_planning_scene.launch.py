@@ -53,5 +53,5 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(move_rviz_file_path)
         ),
         add_objects_planning_scene_node,
-        # moveit_cpp_node,
+        moveit_cpp_node,
     ])

@@ -41,15 +41,26 @@ ament_target_dependencies(add_objects_planning_scene
 # Add the linker flag otherwise yaml library wont work
 target_link_libraries(add_objects_planning_scene ${YAML_CPP_LIBRARIES})
 
+# Pick and place pipeline executable
+add_executable(pick_and_place src/pick_and_place.cpp)
+target_include_directories(pick_and_place PUBLIC include)
+ament_target_dependencies(pick_and_place
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+  yaml-cpp
+)
 
 install(TARGETS
    add_objects_planning_scene
+   pick_and_place
    DESTINATION lib/${PROJECT_NAME}
 )
 
 # install the config files
 install(DIRECTORY
   config
+  launch
   DESTINATION share/${PROJECT_NAME}/
 )
 
