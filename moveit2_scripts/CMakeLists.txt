@@ -51,9 +51,21 @@ ament_target_dependencies(pick_and_place
   yaml-cpp
 )
 
+
+# Make the Aruco visible executable
+add_executable(make_aruco_visible src/make_aruco_visible.cpp)
+target_include_directories(make_aruco_visible PUBLIC include)
+ament_target_dependencies(make_aruco_visible
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+  yaml-cpp
+)
+
 install(TARGETS
    add_objects_planning_scene
    pick_and_place
+   make_aruco_visible
    DESTINATION lib/${PROJECT_NAME}
 )
 
