@@ -1,0 +1,3 @@
+[submodule "ros2-aruco-pose-estimation"]
+	path = ros2-aruco-pose-estimation
+	url = https://github.com/AIRLab-POLIMI/ros2-aruco-pose-estimation
