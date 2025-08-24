@@ -1,0 +1,4 @@
+numpy<2.0.0
+opencv-python==4.8.1.78
+opencv-contrib-python==4.8.1.78
+transforms3d
