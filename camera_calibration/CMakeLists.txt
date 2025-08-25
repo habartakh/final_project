@@ -13,6 +13,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(aruco_interfaces REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -25,5 +26,22 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+# Add the TF broadcaster of the ArUco and Camera frames
+add_executable(aruco_camera_tf_broadcaster src/aruco_camera_tf_broadcaster.cpp)
+target_include_directories(aruco_camera_tf_broadcaster PUBLIC include)
+ament_target_dependencies(
+    aruco_camera_tf_broadcaster
+    geometry_msgs
+    rclcpp
+    tf2
+    tf2_ros
+    aruco_interfaces
+)
+
+install(TARGETS
+    aruco_camera_tf_broadcaster
+    DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_package()
