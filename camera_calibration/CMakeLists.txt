@@ -12,6 +12,7 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(aruco_interfaces REQUIRED)
 
@@ -39,8 +40,22 @@ ament_target_dependencies(
     aruco_interfaces
 )
 
+# Add the TF broadcaster of the ArUco and Camera frames
+add_executable(camera_robot_tf_broadcaster src/camera_robot_tf_broadcaster.cpp)
+target_include_directories(camera_robot_tf_broadcaster PUBLIC include)
+ament_target_dependencies(
+    camera_robot_tf_broadcaster
+    geometry_msgs
+    rclcpp
+    tf2
+    tf2_ros
+	tf2_geometry_msgs
+    aruco_interfaces
+)
+
 install(TARGETS
     aruco_camera_tf_broadcaster
+	camera_robot_tf_broadcaster
     DESTINATION lib/${PROJECT_NAME}
 )
 
