@@ -15,6 +15,13 @@ find_package(moveit_visual_tools REQUIRED)
 find_package(moveit_msgs REQUIRED)
 find_package(geometric_shapes REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(action_msgs REQUIRED)
+find_package(rclcpp_action REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/SetJointValues.action"
+  DEPENDENCIES builtin_interfaces
+)
 
 
 if(BUILD_TESTING)
@@ -28,6 +35,7 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
 
 
 add_executable(add_objects_planning_scene src/add_objects_planning_scene.cpp)
@@ -62,10 +70,39 @@ ament_target_dependencies(make_aruco_visible
   yaml-cpp
 )
 
+# Set Joint values action server executable 
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME} rosidl_typesupport_cpp)
+
+add_executable(set_arm_joints_action_server src/set_arm_joints_action_server.cpp)
+target_include_directories(set_arm_joints_action_server PUBLIC include)
+ament_target_dependencies(set_arm_joints_action_server
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+  yaml-cpp
+)
+target_link_libraries(set_arm_joints_action_server "${cpp_typesupport_target}")
+
+# Set Joint values action client executable 
+
+add_executable(set_arm_joints_action_client src/set_arm_joints_action_client.cpp)
+target_include_directories(set_arm_joints_action_client PUBLIC include)
+ament_target_dependencies(set_arm_joints_action_client
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+  yaml-cpp
+)
+target_link_libraries(set_arm_joints_action_client "${cpp_typesupport_target}")
+
+
 install(TARGETS
    add_objects_planning_scene
    pick_and_place
    make_aruco_visible
+   set_arm_joints_action_server
+   set_arm_joints_action_client
    DESTINATION lib/${PROJECT_NAME}
 )
 
