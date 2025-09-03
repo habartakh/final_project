@@ -70,6 +70,18 @@ ament_target_dependencies(make_aruco_visible
   yaml-cpp
 )
 
+
+# The trajctory pipeline to move the ArUco marker in places visible by the camera
+add_executable(aruco_visible_trajectory src/aruco_visible_trajectory.cpp)
+target_include_directories(aruco_visible_trajectory PUBLIC include)
+ament_target_dependencies(aruco_visible_trajectory
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+  yaml-cpp
+)
+
+
 # Set Joint values action server executable 
 rosidl_get_typesupport_target(cpp_typesupport_target
   ${PROJECT_NAME} rosidl_typesupport_cpp)
@@ -85,7 +97,6 @@ ament_target_dependencies(set_arm_joints_action_server
 target_link_libraries(set_arm_joints_action_server "${cpp_typesupport_target}")
 
 # Set Joint values action client executable 
-
 add_executable(set_arm_joints_action_client src/set_arm_joints_action_client.cpp)
 target_include_directories(set_arm_joints_action_client PUBLIC include)
 ament_target_dependencies(set_arm_joints_action_client
@@ -101,6 +112,7 @@ install(TARGETS
    add_objects_planning_scene
    pick_and_place
    make_aruco_visible
+   aruco_visible_trajectory
    set_arm_joints_action_server
    set_arm_joints_action_client
    DESTINATION lib/${PROJECT_NAME}
