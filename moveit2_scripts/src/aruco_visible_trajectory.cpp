@@ -93,10 +93,10 @@ public:
     RCLCPP_INFO(
         LOGGER,
         "Planning and Executing ArUco Visible Trajectory Trajectory...");
-    setup_joint_value_target(0.564, -2.944, -1.919, 0.557, 2.878, 0.664);
+    setup_joint_value_target(0.611, -2.653, -1.99, 0.523, 2.845, 0.838);
 
-    // setup_goal_pose_target(-0.290, -0.195, 0.068, 0.178, 0.074, -0.406,
-    // 0.893);
+    // setup_joint_value_target(0.564, -2.944, -1.919, 0.557, 2.878, 0.664);
+
     //  plan and execute the trajectory
     plan_trajectory_kinematics();
     execute_trajectory_kinematics();
@@ -295,16 +295,19 @@ private:
     execute_trajectory_gripper();
   }
 
+  // Move the arm in a circular trajectory while making sure the ArUco Marker
+  // stays visible. The trajectory parameters were finetuned using RVIZ
   void start_aruco_visible_trajectory() {
     double delta_x = 0.0;
     double delta_y = 0.0;
 
     for (int i = 0; i < 11; ++i) {
 
-      delta_x = 0.08 * sin(i * 3.14 / 5);
-      delta_y = 0.08 * cos(i * 3.14 / 5);
+      delta_x = 0.015 * cos(i * 3.14 / 5);
+      delta_y = -0.015 * sin(i * 3.14 / 5);
       setup_waypoints_target(delta_x, delta_y, 0.000);
-      // plan and execute the trajectory
+
+      // plan and execute the cartesian trajectory
       plan_trajectory_cartesian();
       execute_trajectory_cartesian();
 
