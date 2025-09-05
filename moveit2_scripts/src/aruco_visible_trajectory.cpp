@@ -64,19 +64,14 @@ public:
     initial_state_robot_ = move_group_robot_->getCurrentState(10);
     initial_state_robot_->copyJointGroupPositions(joint_model_group_robot_,
                                                   joint_group_positions_robot_);
-    initial_state_gripper_ = move_group_gripper_->getCurrentState(10);
-    initial_state_gripper_->copyJointGroupPositions(
-        joint_model_group_gripper_, joint_group_positions_gripper_);
 
     // Store the initial joints positions to use later to make the robot return
     // to its initial position at the end of the ArUco Visible Trajectory
     // sequence
     initial_joint_group_positions_robot_ = joint_group_positions_robot_;
-    initial_joint_group_positions_gripper_ = joint_group_positions_gripper_;
 
     // set start state of robot and gripper to current state
     move_group_robot_->setStartStateToCurrentState();
-    move_group_gripper_->setStartStateToCurrentState();
 
     // indicate initialization
     RCLCPP_INFO(LOGGER,
@@ -89,24 +84,20 @@ public:
                 "Class Terminated: ArUco Visible Trajectory Trajectory");
   }
 
+  // The main function executed: moves the ArUco marker in a circular manner
   void execute_trajectory_plan() {
     RCLCPP_INFO(
         LOGGER,
         "Planning and Executing ArUco Visible Trajectory Trajectory...");
-    setup_joint_value_target(0.611, -2.653, -1.99, 0.523, 2.845, 0.838);
 
-    // setup_joint_value_target(0.564, -2.944, -1.919, 0.557, 2.878, 0.664);
+    // First, start from a configuration where the ArUco marker is visible
+    setup_arm_first_configuration();
 
-    //  plan and execute the trajectory
-    plan_trajectory_kinematics();
-    execute_trajectory_kinematics();
-
-    // wait one second
+    // wait 2 seconds
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-    rotate_gripper();
-
-    // start_aruco_visible_trajectory();
+    // Start the circular trajectory pipeline
+    start_aruco_visible_trajectory();
 
     // After finishing the task, return to the original position
     // return_to_initial_position();
@@ -149,12 +140,7 @@ private:
   Plan kinematics_trajectory_plan_;
   Pose target_pose_robot_;
   bool plan_success_robot_ = false;
-  std::vector<double> joint_group_positions_gripper_;
-  std::vector<double> initial_joint_group_positions_gripper_;
-  RobotStatePtr current_state_gripper_;
-  RobotStatePtr initial_state_gripper_;
   Plan gripper_trajectory_plan_;
-  bool plan_success_gripper_ = false;
 
   // declare cartesian trajectory planning variables for robot
   std::vector<Pose> cartesian_waypoints_;
@@ -239,46 +225,7 @@ private:
     cartesian_waypoints_.clear();
   }
 
-  void setup_joint_value_gripper(float angle) {
-    // set the joint values for each joint of gripper
-    // based on values provided
-    joint_group_positions_gripper_[2] = angle;
-    move_group_gripper_->setJointValueTarget(joint_group_positions_gripper_);
-  }
-
-  void setup_named_pose_gripper(std::string pose_name) {
-    // set the joint values for each joint of gripper
-    // based on predefined pose names
-    move_group_gripper_->setNamedTarget(pose_name);
-  }
-
-  void plan_trajectory_gripper() {
-    // plan the gripper action
-    plan_success_gripper_ =
-        (move_group_gripper_->plan(gripper_trajectory_plan_) ==
-         moveit::core::MoveItErrorCode::SUCCESS);
-  }
-
-  void execute_trajectory_gripper() {
-    // execute the planned gripper action
-    if (plan_success_gripper_) {
-      move_group_gripper_->execute(gripper_trajectory_plan_);
-      RCLCPP_INFO(LOGGER, "Gripper Action Command Success !");
-    } else {
-      RCLCPP_INFO(LOGGER, "Gripper Action Command Failed !");
-    }
-  }
-
-  void set_gripper_value(double gripper_joint_value) {
-    // open the gripper
-    RCLCPP_INFO(LOGGER, "Set Gripper joint value...");
-    // setup the gripper target by pose name
-    setup_joint_value_gripper(gripper_joint_value);
-    // plan and execute the trajectory
-    plan_trajectory_gripper();
-    execute_trajectory_gripper();
-  }
-
+  // Return the robot arm to its initial configuration
   void return_to_initial_position() {
 
     RCLCPP_INFO(LOGGER, "Returning to the initial pose...");
@@ -289,12 +236,17 @@ private:
 
     plan_trajectory_kinematics();
     execute_trajectory_kinematics();
+  }
 
-    // Then set the gripper to its initial position
-    move_group_gripper_->setJointValueTarget(
-        initial_joint_group_positions_gripper_);
-    plan_trajectory_gripper();
-    execute_trajectory_gripper();
+  // Set up the joints to make the ArUco visible
+  // Values were obtained from the moveit RVIZ GUI
+  void setup_arm_first_configuration() {
+
+    setup_joint_value_target(0.611, -2.653, -1.99, 0.523, 2.845, 0.838);
+
+    //  plan and execute the trajectory
+    plan_trajectory_kinematics();
+    execute_trajectory_kinematics();
   }
 
   // Move the arm in a circular trajectory while making sure the ArUco Marker
@@ -303,19 +255,21 @@ private:
     double delta_x = 0.0;
     double delta_y = 0.0;
 
-    for (int i = 0; i < 11; ++i) {
+    for (int i = 0; i < 5; ++i) {
 
-      delta_x = 0.015 * cos(i * 3.14 / 5);
-      delta_y = -0.015 * sin(i * 3.14 / 5);
+      delta_x = 0.03 * cos((2 * i) * 3.14 / 5);
+      delta_y = -0.03 * sin((2 * i) * 3.14 / 5);
       setup_waypoints_target(delta_x, delta_y, 0.000);
 
       // plan and execute the cartesian trajectory
       plan_trajectory_cartesian();
       execute_trajectory_cartesian();
 
+      // For each waypoint of circular trajectory, rotate the marker 5 times
       rotate_gripper();
 
-      std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+      // Stay in the same position for 2 seconds
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
   }
 
@@ -328,20 +282,21 @@ private:
 
     plan_trajectory_kinematics();
     execute_trajectory_kinematics();
-    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   }
 
   // Perform a rotation from right to left of the ArUco marker
-  void perform_gripper_motion(double base_gripper_value, double sign) {
+  void perform_gripper_motion(double base_gripper_value) {
 
-    for (int i = -3; i < 3; ++i) {
-      double gripper_joint_value = base_gripper_value + sign * i * 0.2;
+    for (int i = -2; i < 3; ++i) {
+      double gripper_joint_value = base_gripper_value + i * 0.3;
       move_gripper_to(gripper_joint_value);
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
     // Return the ArUco marker to its initial orientation
     move_gripper_to(base_gripper_value);
   }
 
+  // Rotate the gripper 5 times to detect different marker positions
   void rotate_gripper() {
     RCLCPP_INFO(LOGGER, "Rotating the gripper for this instance...");
 
@@ -353,9 +308,8 @@ private:
     double base_gripper_value = joint_group_positions_robot_[5];
 
     // Perform motion in both directions
-    perform_gripper_motion(base_gripper_value, 1.0);
+    perform_gripper_motion(base_gripper_value);
   }
-
 
 }; // class ArucoVisibleTrajectory
 
