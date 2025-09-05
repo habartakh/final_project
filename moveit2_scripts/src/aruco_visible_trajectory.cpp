@@ -104,7 +104,9 @@ public:
     // wait one second
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-    start_aruco_visible_trajectory();
+    rotate_gripper();
+
+    // start_aruco_visible_trajectory();
 
     // After finishing the task, return to the original position
     // return_to_initial_position();
@@ -198,7 +200,7 @@ private:
     // execute the planned trajectory to target using kinematics
     if (plan_success_robot_) {
       move_group_robot_->execute(kinematics_trajectory_plan_);
-      RCLCPP_INFO(LOGGER, "Robot Kinematics Trajectory Success !");
+      // RCLCPP_INFO(LOGGER, "Robot Kinematics Trajectory Success !");
     } else {
       RCLCPP_INFO(LOGGER, "Robot Kinematics Trajectory Failed !");
     }
@@ -311,9 +313,49 @@ private:
       plan_trajectory_cartesian();
       execute_trajectory_cartesian();
 
+      rotate_gripper();
+
       std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     }
   }
+
+  // Change the gripper's orientation to a given gripper_joint_value
+  void move_gripper_to(double gripper_joint_value) {
+    setup_joint_value_target(
+        joint_group_positions_robot_[0], joint_group_positions_robot_[1],
+        joint_group_positions_robot_[2], joint_group_positions_robot_[3],
+        joint_group_positions_robot_[4], gripper_joint_value);
+
+    plan_trajectory_kinematics();
+    execute_trajectory_kinematics();
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+  }
+
+  // Perform a rotation from right to left of the ArUco marker
+  void perform_gripper_motion(double base_gripper_value, double sign) {
+
+    for (int i = -3; i < 3; ++i) {
+      double gripper_joint_value = base_gripper_value + sign * i * 0.2;
+      move_gripper_to(gripper_joint_value);
+    }
+    // Return the ArUco marker to its initial orientation
+    move_gripper_to(base_gripper_value);
+  }
+
+  void rotate_gripper() {
+    RCLCPP_INFO(LOGGER, "Rotating the gripper for this instance...");
+
+    // Get the robot's current joint values
+    current_state_robot_ = move_group_robot_->getCurrentState(10);
+    current_state_robot_->copyJointGroupPositions(joint_model_group_robot_,
+                                                  joint_group_positions_robot_);
+
+    double base_gripper_value = joint_group_positions_robot_[5];
+
+    // Perform motion in both directions
+    perform_gripper_motion(base_gripper_value, 1.0);
+  }
+
 
 }; // class ArucoVisibleTrajectory
 
