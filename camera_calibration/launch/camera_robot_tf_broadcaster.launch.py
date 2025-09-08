@@ -37,6 +37,6 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(aruco_pose_estimation_file_path)
         ),
-        delayed_tf_node,
+     delayed_tf_node,
        
     ])
