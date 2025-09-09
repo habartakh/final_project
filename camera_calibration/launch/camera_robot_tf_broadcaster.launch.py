@@ -16,6 +16,12 @@ def generate_launch_description():
         'aruco_pose_estimation.launch.py'
     )
 
+    aruco_visible_trajectory_launch_file_path =  os.path.join(
+        get_package_share_directory('moveit2_scripts'),
+        'launch',
+        'aruco_visible_trajectory.launch.py'
+    )
+
     camera_robot_tf_broadcaster_node = Node(
         name="camera_robot_tf_broadcaster",
         package="camera_calibration",
@@ -24,10 +30,9 @@ def generate_launch_description():
     )
 
 
-    # wait for 10 seconds to make sure the collision objects were added to the planning scene
-    # Then start planning and executing the trajectory 
+    # wait for 30 seconds to make sure the robot arm started following the aruco_visible trajectory
     delayed_tf_node = TimerAction(
-        period=5.0,  
+        period=30.0,  
         actions=[
         camera_robot_tf_broadcaster_node,
         ])
@@ -36,6 +41,9 @@ def generate_launch_description():
     return LaunchDescription([
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(aruco_pose_estimation_file_path)
+        ),
+         IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(aruco_visible_trajectory_launch_file_path)
         ),
      delayed_tf_node,
        

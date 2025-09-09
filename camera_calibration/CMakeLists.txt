@@ -53,9 +53,22 @@ ament_target_dependencies(
     aruco_interfaces
 )
 
+# Add the final TF broadcaster of the base_link and Camera frames
+add_executable(final_tf_broadcaster src/final_tf_broadcaster.cpp)
+target_include_directories(final_tf_broadcaster PUBLIC include)
+ament_target_dependencies(
+    final_tf_broadcaster
+    geometry_msgs
+    rclcpp
+    tf2
+    tf2_ros
+	tf2_geometry_msgs
+)
+
 install(TARGETS
     aruco_camera_tf_broadcaster
 	camera_robot_tf_broadcaster
+	final_tf_broadcaster
     DESTINATION lib/${PROJECT_NAME}
 )
 
