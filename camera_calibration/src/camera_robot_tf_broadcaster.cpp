@@ -90,16 +90,41 @@ private:
     tf2::fromMsg(t_aruco_base.transform, tf_aruco_base);
 
     // tf from camera to aruco (from ArUco detection)
-    tf2::Vector3 trans(estimated_aruco_pose.position.x,
-                       estimated_aruco_pose.position.y,
-                       estimated_aruco_pose.position.z);
+    tf2::Matrix3x3 correction;
+    correction.setRPY(0, M_PI / 2, 0); // Rotate -90° around Y axis
 
-    tf2::Quaternion rot(
+    tf2::Quaternion correction_quat;
+    correction.getRotation(correction_quat);
+
+    tf2::Transform marker_frame_fix;
+    marker_frame_fix.setIdentity();
+    marker_frame_fix.setRotation(correction_quat);
+
+    // Build tf2 transform from OpenCV pose
+    tf2::Transform tf_cam_marker;
+    tf_cam_marker.setOrigin(tf2::Vector3(estimated_aruco_pose.position.x,
+                                         estimated_aruco_pose.position.y,
+                                         estimated_aruco_pose.position.z));
+    tf_cam_marker.setRotation(tf2::Quaternion(
         estimated_aruco_pose.orientation.x, estimated_aruco_pose.orientation.y,
-        estimated_aruco_pose.orientation.z, estimated_aruco_pose.orientation.w);
+        estimated_aruco_pose.orientation.z,
+        estimated_aruco_pose.orientation.w));
 
-    tf_cam_aruco.setOrigin(trans);
-    tf_cam_aruco.setRotation(rot);
+    // Apply correction
+    tf_cam_aruco = marker_frame_fix * tf_cam_marker;
+
+    // tf2::Vector3 trans(estimated_aruco_pose.position.x,
+    //                    estimated_aruco_pose.position.y,
+    //                    estimated_aruco_pose.position.z);
+
+    // tf2::Quaternion rot(
+    //     estimated_aruco_pose.orientation.x,
+    //     estimated_aruco_pose.orientation.y,
+    //     estimated_aruco_pose.orientation.z,
+    //     estimated_aruco_pose.orientation.w);
+
+    // tf_cam_aruco.setOrigin(trans);
+    // tf_cam_aruco.setRotation(rot);
 
     // Invert the camera-to-aruco to get aruco-to-camera
     tf2::Transform tf_aruco_cam = tf_cam_aruco.inverse();
@@ -126,17 +151,10 @@ private:
     // RCLCPP_INFO(this->get_logger(), "rotation.x: %f",
     //             t_base_camera_msg.transform.rotation.x);
 
-    // RCLCPP_INFO(this->get_logger(), "translation.x: %f",
-    //             t_base_camera_msg.transform.translation.x);
-    // RCLCPP_INFO(this->get_logger(), "translation.y: %f",
-    //             t_base_camera_msg.transform.translation.y);
-    // RCLCPP_INFO(this->get_logger(), "translation.z: %f",
-    //             t_base_camera_msg.transform.translation.z);
-
     // Broadcast the transform
     tf_broadcaster_->sendTransform(t_base_camera_msg);
 
-    compile_aruco_poses_file();
+    // compile_aruco_poses_file();
   }
 
   // Compile all the TF values obtained during robot trajectory detection inside
@@ -163,7 +181,6 @@ private:
                  << t_base_camera_msg.transform.rotation.y << " "
                  << t_base_camera_msg.transform.rotation.z << " "
                  << t_base_camera_msg.transform.rotation.w << std::endl;
-
 
       RCLCPP_INFO(this->get_logger(), "########################################"
                                       "###############################");

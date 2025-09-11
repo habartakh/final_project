@@ -15,6 +15,8 @@ find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(aruco_interfaces REQUIRED)
+find_package(Eigen3 REQUIRED)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -55,7 +57,7 @@ ament_target_dependencies(
 
 # Add the final TF broadcaster of the base_link and Camera frames
 add_executable(final_tf_broadcaster src/final_tf_broadcaster.cpp)
-target_include_directories(final_tf_broadcaster PUBLIC include)
+target_include_directories(final_tf_broadcaster PUBLIC ${EIGEN3_INCLUDE_DIR})
 ament_target_dependencies(
     final_tf_broadcaster
     geometry_msgs

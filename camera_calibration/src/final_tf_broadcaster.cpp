@@ -1,3 +1,4 @@
+#include <Eigen/Dense>
 #include <cmath>
 #include <fstream>
 #include <geometry_msgs/msg/transform_stamped.hpp>
@@ -46,6 +47,9 @@ private:
   geometry_msgs::msg::TransformStamped averaged_tf_;
   rclcpp::TimerBase::SharedPtr timer_;
 
+  std::vector<Eigen::Quaterniond> quaternions;
+  std::vector<Eigen::Vector3d> positions;
+
   // Computes the average of all the TFs collected during the robot trajectory
   bool readAndAveragePoses(const std::string &path) {
     std::ifstream file(path);
@@ -60,8 +64,8 @@ private:
     Pose prevPose = {};
     bool firstLine = true;
 
-    double sumX = 0, sumY = 0, sumZ = 0;
-    double sumQX = 0, sumQY = 0, sumQZ = 0, sumQW = 0;
+    // double sumX = 0, sumY = 0, sumZ = 0;
+    // double sumQX = 0, sumQY = 0, sumQZ = 0, sumQW = 0;
     int count = 0;
 
     while (std::getline(file, line)) {
@@ -81,15 +85,19 @@ private:
         continue;
       }
 
-      // Compute the sum of each component
-      sumX += pose.x;
-      sumY += pose.y;
-      sumZ += pose.z;
+      positions.emplace_back(pose.x, pose.y, pose.z);
+      quaternions.emplace_back(pose.qw, pose.qx, pose.qy,
+                               pose.qz); // Eigen uses (w, x, y, z)
 
-      sumQX += pose.qx;
-      sumQY += pose.qy;
-      sumQZ += pose.qz;
-      sumQW += pose.qw;
+      //   // Compute the sum of each component
+      //   sumX += pose.x;
+      //   sumY += pose.y;
+      //   sumZ += pose.z;
+
+      //   sumQX += pose.qx;
+      //   sumQY += pose.qy;
+      //   sumQZ += pose.qz;
+      //   sumQW += pose.qw;
 
       prevPose = pose;
       firstLine = false;
@@ -103,34 +111,42 @@ private:
       return false;
     }
 
-    // Normalize the quaternion
-    double avgQX = sumQX / count;
-    double avgQY = sumQY / count;
-    double avgQZ = sumQZ / count;
-    double avgQW = sumQW / count;
+    // AVERAGE POSITION (simple arithmetic mean)
+    Eigen::Vector3d pos_sum(0, 0, 0);
+    for (const auto &p : positions)
+      pos_sum += p;
+    Eigen::Vector3d avg_pos = pos_sum / positions.size();
 
-    double norm = std::sqrt(avgQX * avgQX + avgQY * avgQY + avgQZ * avgQZ +
-                            avgQW * avgQW);
-    if (norm == 0) {
-      RCLCPP_ERROR(this->get_logger(), "Quaternion normalization failed.");
+    // MARKLEY'S METHOD FOR QUATERNION AVERAGE
+    Eigen::Matrix4d A = Eigen::Matrix4d::Zero();
+
+    for (const auto &q : quaternions) {
+      Eigen::Vector4d q_vec(q.w(), q.x(), q.y(), q.z());
+      A += q_vec * q_vec.transpose();
+    }
+
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> eigensolver(A);
+    if (eigensolver.info() != Eigen::Success) {
+      RCLCPP_ERROR(this->get_logger(), "Eigen decomposition failed.");
       return false;
     }
 
-    avgQX /= norm;
-    avgQY /= norm;
-    avgQZ /= norm;
-    avgQW /= norm;
+    Eigen::Vector4d avg_qvec =
+        eigensolver.eigenvectors().col(3); // Eigenvectors sorted ascending
+    Eigen::Quaterniond avg_q(avg_qvec(0), avg_qvec(1), avg_qvec(2),
+                             avg_qvec(3)); // (w, x, y, z)
+    avg_q.normalize();                     // Always normalize just in case
 
-    // Compute the averaged transform
+    // Set the averaged transform
     averaged_tf_.header.frame_id = "base_link";
     averaged_tf_.child_frame_id = "wrist_rgbd_camera_link";
-    averaged_tf_.transform.translation.x = sumX / count;
-    averaged_tf_.transform.translation.y = sumY / count;
-    averaged_tf_.transform.translation.z = sumZ / count;
-    averaged_tf_.transform.rotation.x = avgQX;
-    averaged_tf_.transform.rotation.y = avgQY;
-    averaged_tf_.transform.rotation.z = avgQZ;
-    averaged_tf_.transform.rotation.w = avgQW;
+    averaged_tf_.transform.translation.x = avg_pos.x();
+    averaged_tf_.transform.translation.y = avg_pos.y();
+    averaged_tf_.transform.translation.z = avg_pos.z();
+    averaged_tf_.transform.rotation.x = avg_q.x();
+    averaged_tf_.transform.rotation.y = avg_q.y();
+    averaged_tf_.transform.rotation.z = avg_q.z();
+    averaged_tf_.transform.rotation.w = avg_q.w();
 
     return true;
   }

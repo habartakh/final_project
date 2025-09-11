@@ -42,9 +42,9 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(aruco_pose_estimation_file_path)
         ),
-         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(aruco_visible_trajectory_launch_file_path)
-        ),
+        #  IncludeLaunchDescription(
+        #     PythonLaunchDescriptionSource(aruco_visible_trajectory_launch_file_path)
+        # ),
      delayed_tf_node,
        
     ])
