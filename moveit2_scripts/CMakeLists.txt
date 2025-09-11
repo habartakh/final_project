@@ -49,6 +49,18 @@ ament_target_dependencies(add_objects_planning_scene
 # Add the linker flag otherwise yaml library wont work
 target_link_libraries(add_objects_planning_scene ${YAML_CPP_LIBRARIES})
 
+#Node that adds the real robot collision objects to the planning scene 
+add_executable(add_objects_planning_scene_real src/add_objects_planning_scene_real.cpp)
+target_include_directories(add_objects_planning_scene_real PUBLIC include)
+ament_target_dependencies(add_objects_planning_scene_real
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+  yaml-cpp
+)
+# Add the linker flag otherwise yaml library wont work
+target_link_libraries(add_objects_planning_scene_real ${YAML_CPP_LIBRARIES})
+
 # Pick and place pipeline executable
 add_executable(pick_and_place src/pick_and_place.cpp)
 target_include_directories(pick_and_place PUBLIC include)
@@ -110,6 +122,7 @@ target_link_libraries(set_arm_joints_action_client "${cpp_typesupport_target}")
 
 install(TARGETS
    add_objects_planning_scene
+   add_objects_planning_scene_real
    pick_and_place
    make_aruco_visible
    aruco_visible_trajectory
