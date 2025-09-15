@@ -35,7 +35,7 @@ private:
     // Get the package directory at runtime
     std::string package_share_directory =
         ament_index_cpp::get_package_share_directory(
-            "moveit2_scripts"); // Replace with your package name
+            "moveit2_scripts"); 
 
     std::string yaml_file_path =
         package_share_directory + "/config/" + yaml_file_name;

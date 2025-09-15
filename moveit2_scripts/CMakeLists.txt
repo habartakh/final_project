@@ -72,7 +72,7 @@ ament_target_dependencies(pick_and_place
 )
 
 
-# Make the Aruco visible executable
+# Make the Aruco visible in simulation executable
 add_executable(make_aruco_visible src/make_aruco_visible.cpp)
 target_include_directories(make_aruco_visible PUBLIC include)
 ament_target_dependencies(make_aruco_visible
@@ -83,7 +83,7 @@ ament_target_dependencies(make_aruco_visible
 )
 
 
-# The trajctory pipeline to move the ArUco marker in places visible by the camera
+# The trajectory pipeline to move the ArUco marker in places visible by the camera in the simulation
 add_executable(aruco_visible_trajectory src/aruco_visible_trajectory.cpp)
 target_include_directories(aruco_visible_trajectory PUBLIC include)
 ament_target_dependencies(aruco_visible_trajectory
@@ -92,6 +92,19 @@ ament_target_dependencies(aruco_visible_trajectory
   geometric_shapes
   yaml-cpp
 )
+
+# Trajectory maintaining the ArUco marker visible by the camera in the real world
+add_executable(aruco_visible_trajectory_real src/aruco_visible_trajectory_real.cpp)
+target_include_directories(aruco_visible_trajectory_real PUBLIC include)
+ament_target_dependencies(aruco_visible_trajectory_real
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+  yaml-cpp
+)
+
+# Add the linker flag otherwise yaml library wont work
+target_link_libraries(aruco_visible_trajectory_real ${YAML_CPP_LIBRARIES})
 
 
 # Set Joint values action server executable 
@@ -126,6 +139,7 @@ install(TARGETS
    pick_and_place
    make_aruco_visible
    aruco_visible_trajectory
+   aruco_visible_trajectory_real
    set_arm_joints_action_server
    set_arm_joints_action_client
    DESTINATION lib/${PROJECT_NAME}
