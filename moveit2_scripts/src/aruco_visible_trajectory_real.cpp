@@ -282,7 +282,11 @@ private:
       plan_trajectory_kinematics();
       execute_trajectory_kinematics();
 
-      // For each waypoint of the trajectory, rotate the marker 5 times
+      //  Wait for 5 seconds before rotation
+      std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+
+      // For each waypoint of the trajectory, rotate the marker from right to
+      // left, then downwards
       rotate_gripper();
 
       // Stay in the same position for 2 seconds
@@ -291,31 +295,55 @@ private:
   }
 
   // Change the gripper's orientation to a given gripper_joint_value
-  void move_gripper_to(double gripper_joint_value) {
-    setup_joint_value_target(
-        joint_group_positions_robot_[0], joint_group_positions_robot_[1],
-        joint_group_positions_robot_[2], joint_group_positions_robot_[3],
-        joint_group_positions_robot_[4], gripper_joint_value);
+  void move_gripper_to(double gripper_joint_value, bool is_horizontal) {
+
+    // Rotate the gripper either horizontally
+    if (is_horizontal) {
+      setup_joint_value_target(
+          joint_group_positions_robot_[0], joint_group_positions_robot_[1],
+          joint_group_positions_robot_[2], joint_group_positions_robot_[3],
+          joint_group_positions_robot_[4], gripper_joint_value);
+    }
+    // Or vertically
+    else {
+      setup_joint_value_target(
+          joint_group_positions_robot_[0], joint_group_positions_robot_[1],
+          joint_group_positions_robot_[2], joint_group_positions_robot_[3],
+          gripper_joint_value, joint_group_positions_robot_[5]);
+    }
 
     plan_trajectory_kinematics();
     execute_trajectory_kinematics();
   }
 
   // Perform a rotation from right to left of the ArUco marker
-  void perform_gripper_motion(double base_gripper_value) {
+  void perform_gripper_horizontal_motion(double base_gripper_value) {
 
     for (int i = -2; i < 3; ++i) {
       double gripper_joint_value = base_gripper_value + i * 0.3;
-      move_gripper_to(gripper_joint_value);
+      move_gripper_to(gripper_joint_value, true);
       std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     }
     // Return the ArUco marker to its initial orientation
-    move_gripper_to(base_gripper_value);
+    move_gripper_to(base_gripper_value, true);
+  }
+
+  // Perform a rotation downwards
+  void perform_gripper_vertical_motion(double base_gripper_value) {
+
+    for (int i = 0; i < 3; ++i) {
+      double gripper_joint_value = base_gripper_value - i * 0.2;
+      move_gripper_to(gripper_joint_value, false);
+      std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    }
+    // Return the ArUco marker to its initial orientation
+    move_gripper_to(base_gripper_value, false);
   }
 
   // Rotate the gripper 5 times to detect different marker positions
   void rotate_gripper() {
-    RCLCPP_INFO(LOGGER, "Rotating the gripper for this instance...");
+    RCLCPP_INFO(LOGGER,
+                "Rotating the gripper horizontally for this instance...");
 
     // Get the robot's current joint values
     current_state_robot_ = move_group_robot_->getCurrentState(10);
@@ -323,9 +351,15 @@ private:
                                                   joint_group_positions_robot_);
 
     double base_gripper_value = joint_group_positions_robot_[5];
+    double base_wrist_value = joint_group_positions_robot_[4];
 
-    // Perform motion in both directions
-    perform_gripper_motion(base_gripper_value);
+    // Perform motion from right to left and vice versa
+    perform_gripper_horizontal_motion(base_gripper_value);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+
+    // Rotate the robot vertically
+    perform_gripper_vertical_motion(base_wrist_value);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   }
 
 }; // class ArucoVisibleTrajectoryReal
