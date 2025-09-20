@@ -12,7 +12,9 @@ def generate_launch_description():
         executable="final_tf_broadcaster",
         output="screen", 
         parameters=[
-                {'file_path': '/home/user/ros2_ws/src/final_project/camera_calibration/config/tf_messages.txt'},
+                {'file_path': '/home/user/ros2_ws/src/final_project/camera_calibration/config/tf_messages_real.txt'},
+                {'base_frame': 'base_link'},
+                {'camera_frame': 'D415_link'},
             ],
         
     )
@@ -20,7 +22,7 @@ def generate_launch_description():
 
     # wait for 30 seconds to make sure the robot arm started following the aruco_visible trajectory
     delayed_tf_node = TimerAction(
-        period=30.0,  
+        period=10.0,  
         actions=[
         final_tf_broadcaster_node,
         ])

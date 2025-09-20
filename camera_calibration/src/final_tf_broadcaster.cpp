@@ -31,6 +31,13 @@ public:
     std::string file_path =
         this->declare_parameter<std::string>("file_path", "data.txt");
 
+    // The frames are named differently in the real and simulated robots
+    base_frame =
+        this->declare_parameter<std::string>("base_frame", "base_link");
+
+    camera_frame = this->declare_parameter<std::string>(
+        "camera_frame", "wrist_rgbd_camera_link");
+
     if (!readAndAveragePoses(file_path)) {
       RCLCPP_ERROR(this->get_logger(), "Failed to read or process pose file.");
       return;
@@ -43,6 +50,9 @@ public:
   }
 
 private:
+  std::string base_frame;
+  std::string camera_frame;
+
   std::shared_ptr<tf2_ros::TransformBroadcaster> broadcaster_;
   geometry_msgs::msg::TransformStamped averaged_tf_;
   rclcpp::TimerBase::SharedPtr timer_;
@@ -80,10 +90,10 @@ private:
       }
 
       // If the same TF value is repeated, skip it to avoid bias
-      if (!firstLine && isDuplicate(pose, prevPose)) {
-        RCLCPP_WARN(this->get_logger(), "Repeating TF value: %f", pose.x);
-        continue;
-      }
+      //   if (!firstLine && isDuplicate(pose, prevPose)) {
+      //     RCLCPP_WARN(this->get_logger(), "Repeating TF value: %f", pose.x);
+      //     continue;
+      //   }
 
       positions.emplace_back(pose.x, pose.y, pose.z);
       quaternions.emplace_back(pose.qw, pose.qx, pose.qy,
@@ -137,9 +147,11 @@ private:
                              avg_qvec(3)); // (w, x, y, z)
     avg_q.normalize();                     // Always normalize just in case
 
+    RCLCPP_INFO(this->get_logger(), "Ended average TF computation.");
+
     // Set the averaged transform
-    averaged_tf_.header.frame_id = "base_link";
-    averaged_tf_.child_frame_id = "wrist_rgbd_camera_link";
+    averaged_tf_.header.frame_id = base_frame;
+    averaged_tf_.child_frame_id = camera_frame;
     averaged_tf_.transform.translation.x = avg_pos.x();
     averaged_tf_.transform.translation.y = avg_pos.y();
     averaged_tf_.transform.translation.z = avg_pos.z();

@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstddef>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -24,6 +25,20 @@ using namespace std::chrono_literals;
 class CameraRobotFramePublisher : public rclcpp::Node {
 public:
   CameraRobotFramePublisher() : Node("aruco_camera_frame_publisher") {
+
+    // Parameters declaration
+    yaml_file_path =
+        this->declare_parameter<std::string>("yaml_file_path", "data.txt");
+
+    // The frames are named differently in the real and simulated robots
+    base_frame =
+        this->declare_parameter<std::string>("base_frame", "base_link");
+
+    camera_frame = this->declare_parameter<std::string>(
+        "camera_frame", "wrist_rgbd_camera_link");
+
+    aruco_frame = this->declare_parameter<std::string>(
+        "aruco_frame", "rg2_gripper_aruco_link");
 
     // Initialize the transform broadcaster
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -51,10 +66,11 @@ private:
   void handle_aruco_pose(
       const std::shared_ptr<aruco_interfaces::msg::ArucoMarkers> msg) {
 
-    estimated_aruco_pose = msg->poses[0];
-
-    // Get the timestamp from the ArUco detection
-    rclcpp::Time msg_time = msg->header.stamp;
+    // If a new message was received
+    if (msg != nullptr) {
+      new_message_published = true;
+      estimated_aruco_pose = msg->poses[0];
+    }
   }
 
   // Broadcast the TF camera -- base_link every second
@@ -68,8 +84,8 @@ private:
 
     // Look up for the transformation between base_link and
     // the aruco marker frames
-    std::string fromFrameRel = "rg2_gripper_aruco_link";
-    std::string toFrameRel = "base_link";
+    std::string fromFrameRel = aruco_frame;
+    std::string toFrameRel = base_frame;
     try {
       t_aruco_base = tf_buffer_->lookupTransform(toFrameRel, fromFrameRel,
                                                  tf2::TimePointZero);
@@ -91,7 +107,8 @@ private:
 
     // tf from camera to aruco (from ArUco detection)
     tf2::Matrix3x3 correction;
-    correction.setRPY(0, M_PI / 2, 0); // Rotate -90° around Y axis
+    // correction.setRPY(0, M_PI / 2, 0); // Rotate -90° around Y axis
+    correction.setRPY(0, 0, 0);
 
     tf2::Quaternion correction_quat;
     correction.getRotation(correction_quat);
@@ -135,8 +152,8 @@ private:
     // Convert back to ROS message
 
     t_base_camera_msg.header.stamp = this->get_clock()->now();
-    t_base_camera_msg.header.frame_id = "base_link";
-    t_base_camera_msg.child_frame_id = "wrist_rgbd_camera_link";
+    t_base_camera_msg.header.frame_id = base_frame;
+    t_base_camera_msg.child_frame_id = camera_frame;
 
     t_base_camera_msg.transform.translation.x = tf_base_camera.getOrigin().x();
     t_base_camera_msg.transform.translation.y = tf_base_camera.getOrigin().y();
@@ -154,7 +171,7 @@ private:
     // Broadcast the transform
     tf_broadcaster_->sendTransform(t_base_camera_msg);
 
-    // compile_aruco_poses_file();
+    compile_aruco_poses_file();
   }
 
   // Compile all the TF values obtained during robot trajectory detection inside
@@ -162,13 +179,16 @@ private:
   void compile_aruco_poses_file() {
 
     // Open a file named "tf_messages.txt" in append mode
-    std::ofstream outputFile("/home/user/ros2_ws/src/final_project/"
-                             "camera_calibration/config/tf_messages.txt",
-                             std::ios::app);
+    std::ofstream outputFile(yaml_file_path, std::ios::app);
 
     // Check if the file was opened successfully
     if (!outputFile.is_open()) {
       std::cerr << "Error: Unable to open the file for writing." << std::endl;
+    }
+
+    else if (!new_message_published) {
+      RCLCPP_INFO(this->get_logger(), "No ArUco detected yet. Searching...");
+
     }
 
     else {
@@ -185,6 +205,8 @@ private:
       RCLCPP_INFO(this->get_logger(), "########################################"
                                       "###############################");
 
+      new_message_published = false;
+
       // Close the file
       outputFile.close();
 
@@ -192,6 +214,13 @@ private:
     }
   }
 
+  // Parameters
+  std::string yaml_file_path;
+  std::string base_frame;
+  std::string camera_frame;
+  std::string aruco_frame;
+
+  // TF listeners Broadcasters
   rclcpp::Subscription<aruco_interfaces::msg::ArucoMarkers>::SharedPtr
       subscription_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -200,6 +229,7 @@ private:
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   rclcpp::TimerBase::SharedPtr timer_{nullptr};
+  bool new_message_published = false;
 
   // TF between the robot -- camera frames
   geometry_msgs::msg::TransformStamped t_aruco_base;
