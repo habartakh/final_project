@@ -331,13 +331,18 @@ private:
   // Perform a rotation downwards
   void perform_gripper_vertical_motion(double base_gripper_value) {
 
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 4; ++i) {
       double gripper_joint_value = base_gripper_value - i * 0.2;
       move_gripper_to(gripper_joint_value, false);
       std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     }
+
+    // Remove this return since it generates false TF computations
+    // Bacause the detection cannot update the aruco position swiftly with rapid
+    // arm movements
+
     // Return the ArUco marker to its initial orientation
-    move_gripper_to(base_gripper_value, false);
+    // move_gripper_to(base_gripper_value, false);
   }
 
   // Rotate the gripper 5 times to detect different marker positions
