@@ -67,10 +67,23 @@ ament_target_dependencies(
 	tf2_geometry_msgs
 )
 
+# Compute the projection of a Point from world frame into the camera frame
+add_executable(point_coord_in_camera_frame src/point_coord_in_camera_frame.cpp)
+target_include_directories(point_coord_in_camera_frame PUBLIC include)
+ament_target_dependencies(
+    point_coord_in_camera_frame
+    geometry_msgs
+    rclcpp
+    tf2
+    tf2_ros
+	tf2_geometry_msgs
+)
+
 install(TARGETS
     aruco_camera_tf_broadcaster
 	camera_robot_tf_broadcaster
 	final_tf_broadcaster
+	point_coord_in_camera_frame
     DESTINATION lib/${PROJECT_NAME}
 )
 

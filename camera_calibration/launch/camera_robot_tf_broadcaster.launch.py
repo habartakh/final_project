@@ -11,9 +11,9 @@ from moveit_configs_utils import MoveItConfigsBuilder
 def generate_launch_description():
 
     aruco_pose_estimation_file_path = os.path.join(
-        get_package_share_directory('aruco_pose_estimation'),
+        get_package_share_directory('aruco_detection'),
         'launch',
-        'aruco_pose_estimation.launch.py'
+        'aruco_detector.launch.py'
     )
 
     aruco_visible_trajectory_launch_file_path =  os.path.join(

@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
+#include <deque>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -10,6 +12,7 @@
 #include "aruco_interfaces/msg/aruco_markers.hpp"
 #include "geometry_msgs/msg/detail/pose__struct.hpp"
 #include "geometry_msgs/msg/pose.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "rclcpp/logging.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -47,14 +50,13 @@ public:
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-    subscription_ =
-        this->create_subscription<aruco_interfaces::msg::ArucoMarkers>(
-            "/aruco/markers", 10,
-            std::bind(&CameraRobotFramePublisher::handle_aruco_pose, this,
-                      std::placeholders::_1));
+    subscription_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+        "/aruco/pose", 10,
+        std::bind(&CameraRobotFramePublisher::handle_aruco_pose, this,
+                  std::placeholders::_1));
 
     timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(1000), // 1s interval
+        std::chrono::milliseconds(1000), // 1 second interval
         std::bind(&CameraRobotFramePublisher::timer_callback, this));
 
     RCLCPP_INFO(this->get_logger(),
@@ -63,13 +65,22 @@ public:
 
 private:
   // Get the ArUco marker pose from the detection node topic
-  void handle_aruco_pose(
-      const std::shared_ptr<aruco_interfaces::msg::ArucoMarkers> msg) {
+  void handle_aruco_pose(const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
 
     // If a new message was received
     if (msg != nullptr) {
+
+      // Add new pose to buffer
+      pose_buffer_.push_back(msg->pose);
+
+      // Keep buffer size limited
+      if (pose_buffer_.size() > pose_buffer_size_) {
+        pose_buffer_.pop_front();
+      }
+
       new_message_published = true;
-      estimated_aruco_pose = msg->poses[0];
+      estimated_aruco_pose = msg->pose;
+      current_timestamp = msg->header.stamp;
     }
   }
 
@@ -80,15 +91,14 @@ private:
     //  We are establishing the TF FROM the base_link so we need to project the
     //  aruco coordinates in the aruco (robot) frame. To do that, invert the
     //  position and orientation vectors
-    RCLCPP_INFO(this->get_logger(), "Inside timer callback!!");
 
     // Look up for the transformation between base_link and
     // the aruco marker frames
     std::string fromFrameRel = aruco_frame;
     std::string toFrameRel = base_frame;
     try {
-      t_aruco_base = tf_buffer_->lookupTransform(toFrameRel, fromFrameRel,
-                                                 tf2::TimePointZero);
+      t_aruco_base = tf_buffer_->lookupTransform(
+          toFrameRel, fromFrameRel, rclcpp::Time(current_timestamp));
     } catch (const tf2::TransformException &ex) {
       RCLCPP_INFO(this->get_logger(), "Could not transform %s to %s: %s",
                   toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
@@ -117,15 +127,19 @@ private:
     marker_frame_fix.setIdentity();
     marker_frame_fix.setRotation(correction_quat);
 
+    // Compute the median of the detected aruco poses to use next
+    // This guarentees a more robust estimation as aruco poses are easily
+    // influenced by external factors
+    geometry_msgs::msg::Pose filtered_pose = compute_median_pose();
+
     // Build tf2 transform from OpenCV pose
     tf2::Transform tf_cam_marker;
-    tf_cam_marker.setOrigin(tf2::Vector3(estimated_aruco_pose.position.x,
-                                         estimated_aruco_pose.position.y,
-                                         estimated_aruco_pose.position.z));
+    tf_cam_marker.setOrigin(tf2::Vector3(filtered_pose.position.x,
+                                         filtered_pose.position.y,
+                                         filtered_pose.position.z));
     tf_cam_marker.setRotation(tf2::Quaternion(
-        estimated_aruco_pose.orientation.x, estimated_aruco_pose.orientation.y,
-        estimated_aruco_pose.orientation.z,
-        estimated_aruco_pose.orientation.w));
+        filtered_pose.orientation.x, filtered_pose.orientation.y,
+        filtered_pose.orientation.z, filtered_pose.orientation.w));
 
     // Apply correction
     tf_cam_aruco = marker_frame_fix * tf_cam_marker;
@@ -171,7 +185,52 @@ private:
     // Broadcast the transform
     tf_broadcaster_->sendTransform(t_base_camera_msg);
 
+    // Add all TF values computed to a text file
     compile_aruco_poses_file();
+  }
+
+  geometry_msgs::msg::Pose compute_median_pose() {
+    geometry_msgs::msg::Pose median_pose;
+
+    if (pose_buffer_.empty())
+      return median_pose;
+
+    // Separate components
+    std::vector<double> xs, ys, zs;
+    std::vector<tf2::Quaternion> quaternions;
+
+    for (const auto &pose : pose_buffer_) {
+      xs.push_back(pose.position.x);
+      ys.push_back(pose.position.y);
+      zs.push_back(pose.position.z);
+      tf2::Quaternion q(pose.orientation.x, pose.orientation.y,
+                        pose.orientation.z, pose.orientation.w);
+      quaternions.push_back(q);
+    }
+
+    // Compute medians
+    auto median = [](std::vector<double> &vec) -> double {
+      std::sort(vec.begin(), vec.end());
+      return vec[vec.size() / 2];
+    };
+
+    median_pose.position.x = median(xs);
+    median_pose.position.y = median(ys);
+    median_pose.position.z = median(zs);
+
+    // Average quaternion (approximate)
+    tf2::Quaternion avg_q(0, 0, 0, 0);
+    for (const auto &q : quaternions) {
+      avg_q += q;
+    }
+    avg_q.normalize();
+
+    median_pose.orientation.x = avg_q.x();
+    median_pose.orientation.y = avg_q.y();
+    median_pose.orientation.z = avg_q.z();
+    median_pose.orientation.w = avg_q.w();
+
+    return median_pose;
   }
 
   // Compile all the TF values obtained during robot trajectory detection inside
@@ -221,7 +280,7 @@ private:
   std::string aruco_frame;
 
   // TF listeners Broadcasters
-  rclcpp::Subscription<aruco_interfaces::msg::ArucoMarkers>::SharedPtr
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
       subscription_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   geometry_msgs::msg::Pose estimated_aruco_pose;
@@ -234,6 +293,12 @@ private:
   // TF between the robot -- camera frames
   geometry_msgs::msg::TransformStamped t_aruco_base;
   geometry_msgs::msg::TransformStamped t_base_camera_msg;
+
+  rclcpp::Time current_timestamp;
+
+  // Store the N last aruco poses in a buffer to compute their median
+  std::deque<geometry_msgs::msg::Pose> pose_buffer_;
+  const size_t pose_buffer_size_ = 20;
 };
 
 int main(int argc, char *argv[]) {
