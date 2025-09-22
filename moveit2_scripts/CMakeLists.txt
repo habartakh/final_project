@@ -106,6 +106,14 @@ ament_target_dependencies(aruco_visible_trajectory_real
 # Add the linker flag otherwise yaml library wont work
 target_link_libraries(aruco_visible_trajectory_real ${YAML_CPP_LIBRARIES})
 
+# Executable to test if the TF is okay or not
+add_executable(test_camera_calibration src/test_camera_calibration.cpp)
+target_include_directories(test_camera_calibration PUBLIC include)
+ament_target_dependencies(test_camera_calibration
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+)
 
 # Set Joint values action server executable 
 rosidl_get_typesupport_target(cpp_typesupport_target
@@ -140,6 +148,7 @@ install(TARGETS
    make_aruco_visible
    aruco_visible_trajectory
    aruco_visible_trajectory_real
+   test_camera_calibration
    set_arm_joints_action_server
    set_arm_joints_action_client
    DESTINATION lib/${PROJECT_NAME}
