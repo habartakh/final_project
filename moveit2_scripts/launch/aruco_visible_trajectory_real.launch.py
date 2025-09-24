@@ -43,7 +43,7 @@ def generate_launch_description():
     # wait for 10 seconds to make sure the collision objects were added to the planning scene
     # Then start planning and executing the trajectory 
     delayed_moveit_node = TimerAction(
-        period=20.0,  
+        period=10.0,  
         actions=[
         moveit_cpp_node,
         ])

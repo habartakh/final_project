@@ -102,7 +102,7 @@ public:
     start_aruco_visible_trajectory();
 
     // wait 2 seconds
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
     RCLCPP_INFO(LOGGER,
                 "ArUco Visible Trajectory Trajectory Execution Complete");
@@ -283,14 +283,14 @@ private:
       execute_trajectory_kinematics();
 
       //  Wait for 5 seconds before rotation
-      std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
       // For each waypoint of the trajectory, rotate the marker from right to
       // left, then downwards
       rotate_gripper();
 
       // Stay in the same position for 2 seconds
-      std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
   }
 
@@ -319,10 +319,10 @@ private:
   // Perform a rotation from right to left of the ArUco marker
   void perform_gripper_horizontal_motion(double base_gripper_value) {
 
-    for (int i = -2; i < 3; ++i) {
-      double gripper_joint_value = base_gripper_value + i * 0.3;
+    for (int i = -1; i < 2; ++i) {
+      double gripper_joint_value = base_gripper_value + i * 0.4;
       move_gripper_to(gripper_joint_value, true);
-      std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     }
     // Return the ArUco marker to its initial orientation
     move_gripper_to(base_gripper_value, true);
@@ -331,10 +331,10 @@ private:
   // Perform a rotation downwards
   void perform_gripper_vertical_motion(double base_gripper_value) {
 
-    for (int i = 0; i < 4; ++i) {
-      double gripper_joint_value = base_gripper_value - i * 0.2;
+    for (int i = 0; i < 3; ++i) {
+      double gripper_joint_value = base_gripper_value - i * 0.3;
       move_gripper_to(gripper_joint_value, false);
-      std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     }
 
     // Remove this return since it generates false TF computations
@@ -360,11 +360,11 @@ private:
 
     // Perform motion from right to left and vice versa
     perform_gripper_horizontal_motion(base_gripper_value);
-    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
     // Rotate the robot vertically
     perform_gripper_vertical_motion(base_wrist_value);
-    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   }
 
 }; // class ArucoVisibleTrajectoryReal

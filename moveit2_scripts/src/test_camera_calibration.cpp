@@ -44,6 +44,20 @@ public:
     move_group_robot_->setPoseReferenceFrame(reference_frame);
     RCLCPP_INFO(LOGGER, "Reference frame set to: %s", reference_frame.c_str());
 
+    // Change the end-effector frame
+    // Get the current end-effector link
+    std::string current_ee_link = move_group_robot_->getEndEffectorLink();
+    RCLCPP_INFO(LOGGER, "Current end-effector link: %s",
+                current_ee_link.c_str());
+
+    // Set a new end-effector link
+    // std::string new_ee_link =
+    //     "rg2_gripper_right_finger"; // Replace with the name of your desired
+    //                                 // end-effector link
+    // move_group_robot_->setEndEffectorLink(new_ee_link);
+    // RCLCPP_INFO(LOGGER, "New end-effector link set to: %s",
+    //             new_ee_link.c_str());
+
     // get initial state of robot and gripper
     joint_model_group_robot_ =
         move_group_robot_->getCurrentState()->getJointModelGroup(
@@ -123,11 +137,20 @@ public:
     // 0.000, 1.000);
 
     // Better results!
-    setup_goal_pose_target(0.001, 0.2274, 0.080, 0.000, 0.000, 0.000, 1.000);
+    // setup_goal_pose_target(0.001, 0.2274, 0.080, 0.000, 0.000, 0.000, 1.000);
+
+    setup_goal_pose_target(-0.0965, 0.1793, 0.485, 0.000, 0.000, 0.000, 1.000);
+
+    // test 166:
+    // x: -0.06288740805348997
+    //     y: 0.1704637111203776
+    //     z: 0.89983959520538
+
+    setup_goal_pose_target(-0.0628, 0.1704, 0.4998, 0.000, 0.000, 0.000, 1.000);
 
     // plan and execute the trajectory
     plan_trajectory_kinematics();
-    // execute_trajectory_kinematics();
+    execute_trajectory_kinematics();
   }
 
 private:
