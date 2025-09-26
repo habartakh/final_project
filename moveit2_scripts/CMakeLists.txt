@@ -13,6 +13,7 @@ find_package(moveit_ros_planning REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
 find_package(moveit_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(geometric_shapes REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(action_msgs REQUIRED)
@@ -100,6 +101,7 @@ ament_target_dependencies(aruco_visible_trajectory_real
   rclcpp
   moveit_ros_planning_interface
   geometric_shapes
+  std_msgs
   yaml-cpp
 )
 

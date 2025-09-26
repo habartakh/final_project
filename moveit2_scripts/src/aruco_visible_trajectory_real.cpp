@@ -2,16 +2,21 @@
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
+#include "std_msgs/msg/bool.hpp"
 
 #include <moveit_msgs/msg/display_robot_state.hpp>
 #include <moveit_msgs/msg/display_trajectory.hpp>
 
 #include <chrono>
 #include <cmath>
+#include <future>
 #include <memory>
 #include <thread>
 #include <vector>
+
 #include <yaml-cpp/yaml.h>
+
+using std::placeholders::_1;
 
 // program variables
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("move_group_node");
@@ -33,6 +38,16 @@ public:
     rclcpp::NodeOptions node_options;
     // auto-declare node_options parameters from overrides
     node_options.automatically_declare_parameters_from_overrides(true);
+
+    // Initialize a subscriber node to get the detected object position
+    start_signal_node =
+        rclcpp::Node::make_shared("start_signal_node_real", node_options);
+    start_signal_sub =
+        start_signal_node->create_subscription<std_msgs::msg::Bool>(
+            "start_signal_topic", 10,
+            std::bind(&ArucoVisibleTrajectoryReal::topic_callback, this, _1));
+    start_signal_future_ = start_signal_promise_.get_future();
+    executor_.add_node(start_signal_node);
 
     // initialize move_group node
     move_group_node_ =
@@ -94,19 +109,35 @@ public:
 
   // The main function executed: moves the ArUco marker in a circular manner
   void execute_trajectory_plan() {
-    RCLCPP_INFO(
-        LOGGER,
-        "Planning and Executing ArUco Visible Trajectory Trajectory...");
+    if (start_trajectory) {
 
-    // Start moving the arm to the waypoints from YAML file
-    start_aruco_visible_trajectory();
+      RCLCPP_INFO(
+          LOGGER,
+          "Planning and Executing ArUco Visible Trajectory Trajectory...");
 
-    // wait 2 seconds
-    // std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+      //   // wait till we get detected the start signal
+      //   RCLCPP_INFO(LOGGER, "Waiting for object pose...");
 
-    RCLCPP_INFO(LOGGER,
-                "ArUco Visible Trajectory Trajectory Execution Complete");
+      //   auto status = start_signal_future_.wait_for(std::chrono::seconds(5));
+      //   if (status != std::future_status::ready) {
+      //     RCLCPP_ERROR(LOGGER, "Timeout while waiting for object pose!");
+      //     return;
+      //   }
+
+      // Start moving the arm to the waypoints from YAML file
+      start_aruco_visible_trajectory();
+
+      // wait 2 seconds
+      // std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
+      RCLCPP_INFO(LOGGER,
+                  "ArUco Visible Trajectory Trajectory Execution Complete");
+
+      start_trajectory = false;
+    }
   }
+
+  void wait_for_start_signal() { start_signal_future_.wait(); }
 
 private:
   // using shorthand for lengthy class references
@@ -122,6 +153,14 @@ private:
 
   // declare move_group node
   rclcpp::Node::SharedPtr move_group_node_;
+
+  // subscriber to get the detected object position
+  rclcpp::Node::SharedPtr start_signal_node;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr start_signal_sub;
+
+  // Get the object detected position asynchronously with future object
+  std::promise<std_msgs::msg::Bool> start_signal_promise_;
+  std::future<std_msgs::msg::Bool> start_signal_future_;
 
   // declare single threaded executor for move_group node
   rclcpp::executors::SingleThreadedExecutor executor_;
@@ -143,6 +182,7 @@ private:
   Pose target_pose_robot_;
   bool plan_success_robot_ = false;
   Plan gripper_trajectory_plan_;
+  bool start_trajectory = false;
 
   // declare cartesian trajectory planning variables for robot
   std::vector<Pose> cartesian_waypoints_;
@@ -367,6 +407,23 @@ private:
     // std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   }
 
+  // Detected object position subscriber callback
+  // returns the object's position in reference to the base_link of the arm
+  void topic_callback(const std_msgs::msg::Bool::SharedPtr msg) {
+    RCLCPP_INFO(LOGGER, "Looking for the start signal...");
+
+    // If The signla was sent
+    if (msg != nullptr) {
+
+      start_signal_promise_.set_value(*msg); // Fulfilled the promise
+
+      start_trajectory = true;
+
+      // Then unsubscribe from the topic
+      start_signal_sub.reset();
+    }
+  }
+
 }; // class ArucoVisibleTrajectoryReal
 
 int main(int argc, char **argv) {
@@ -380,6 +437,10 @@ int main(int argc, char **argv) {
 
   // instantiate class
   ArucoVisibleTrajectoryReal aruco_visible_trajectory_node(base_node);
+
+  // Block until the start signal is received
+  RCLCPP_INFO(rclcpp::get_logger("main"), "Waiting for start signal...");
+  aruco_visible_trajectory_node.wait_for_start_signal();
 
   // execute trajectory plan
   aruco_visible_trajectory_node.execute_trajectory_plan();
