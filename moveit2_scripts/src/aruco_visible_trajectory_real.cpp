@@ -3,6 +3,7 @@
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/int16.hpp"
 
 #include <moveit_msgs/msg/display_robot_state.hpp>
 #include <moveit_msgs/msg/display_trajectory.hpp>
@@ -17,6 +18,7 @@
 #include <yaml-cpp/yaml.h>
 
 using std::placeholders::_1;
+using namespace std::chrono_literals;
 
 // program variables
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("move_group_node");
@@ -46,6 +48,12 @@ public:
         start_signal_node->create_subscription<std_msgs::msg::Bool>(
             "start_signal_topic", 10,
             std::bind(&ArucoVisibleTrajectoryReal::topic_callback, this, _1));
+
+    progress_pub = start_signal_node->create_publisher<std_msgs::msg::Int16>(
+        "trajectory_progress", 10);
+    progress_timer = start_signal_node->create_wall_timer(
+        500ms, std::bind(&ArucoVisibleTrajectoryReal::timer_callback, this));
+
     start_signal_future_ = start_signal_promise_.get_future();
     executor_.add_node(start_signal_node);
 
@@ -115,15 +123,6 @@ public:
           LOGGER,
           "Planning and Executing ArUco Visible Trajectory Trajectory...");
 
-      //   // wait till we get detected the start signal
-      //   RCLCPP_INFO(LOGGER, "Waiting for object pose...");
-
-      //   auto status = start_signal_future_.wait_for(std::chrono::seconds(5));
-      //   if (status != std::future_status::ready) {
-      //     RCLCPP_ERROR(LOGGER, "Timeout while waiting for object pose!");
-      //     return;
-      //   }
-
       // Start moving the arm to the waypoints from YAML file
       start_aruco_visible_trajectory();
 
@@ -157,6 +156,11 @@ private:
   // subscriber to get the detected object position
   rclcpp::Node::SharedPtr start_signal_node;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr start_signal_sub;
+
+  // Publisher to share the progress of the trajectory
+  rclcpp::TimerBase::SharedPtr progress_timer;
+  rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr progress_pub;
+  double current_progress = 0.0;
 
   // Get the object detected position asynchronously with future object
   std::promise<std_msgs::msg::Bool> start_signal_promise_;
@@ -307,12 +311,20 @@ private:
   // The trajectory parameters were finetuned using RVIZ
   void start_aruco_visible_trajectory() {
 
+    // Index of the current arUco Pose
+    int i = 1;
+
     // Set the joints to go to each waypoint
     for (auto &joints_vector : arm_joints_trajectory) {
 
       std::cout << "#######################################" << std::endl;
       std::cout << "NEW ARUCO POSE !! " << std::endl;
       std::cout << "#######################################" << std::endl;
+
+      current_progress = (i / arm_joints_trajectory.size()) * 100;
+
+      ++i;
+
       // Set up the joints values to the appropriate position
       setup_joint_value_target(joints_vector[0], joints_vector[1],
                                joints_vector[2], joints_vector[3],
@@ -412,7 +424,7 @@ private:
   void topic_callback(const std_msgs::msg::Bool::SharedPtr msg) {
     RCLCPP_INFO(LOGGER, "Looking for the start signal...");
 
-    // If The signla was sent
+    // If The signal was sent
     if (msg != nullptr) {
 
       start_signal_promise_.set_value(*msg); // Fulfilled the promise
@@ -422,6 +434,14 @@ private:
       // Then unsubscribe from the topic
       start_signal_sub.reset();
     }
+  }
+
+  void timer_callback() {
+
+    auto message = std_msgs::msg::Int16();
+    message.data = (int)current_progress;
+    RCLCPP_INFO(LOGGER, "Current Progress: '%u'", message.data);
+    progress_pub->publish(message);
   }
 
 }; // class ArucoVisibleTrajectoryReal
