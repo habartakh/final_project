@@ -133,6 +133,12 @@ public:
                   "ArUco Visible Trajectory Trajectory Execution Complete");
 
       start_trajectory = false;
+
+      // Publish an illogical progress value to indicate the end of the movement
+      current_progress = 200;
+
+      // Wait for 5 seconds before exiting
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
   }
 
