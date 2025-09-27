@@ -167,7 +167,7 @@ private:
   std::future<std_msgs::msg::Bool> start_signal_future_;
 
   // declare single threaded executor for move_group node
-  rclcpp::executors::SingleThreadedExecutor executor_;
+  rclcpp::executors::MultiThreadedExecutor executor_;
 
   // declare move_group_interface variables for robot and gripper
   std::shared_ptr<MoveGroupInterface> move_group_robot_;
@@ -321,7 +321,9 @@ private:
       std::cout << "NEW ARUCO POSE !! " << std::endl;
       std::cout << "#######################################" << std::endl;
 
-      current_progress = (i / arm_joints_trajectory.size()) * 100;
+      // Never forget to convert to double, else current_progress is 0
+      current_progress =
+          (static_cast<double>(i) / arm_joints_trajectory.size()) * 100;
 
       ++i;
 
@@ -440,7 +442,7 @@ private:
 
     auto message = std_msgs::msg::Int16();
     message.data = (int)current_progress;
-    RCLCPP_INFO(LOGGER, "Current Progress: '%u'", message.data);
+    RCLCPP_INFO(LOGGER, "Current Progress: '%d'", message.data);
     progress_pub->publish(message);
   }
 
