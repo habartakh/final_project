@@ -10,9 +10,6 @@ from launch.substitutions import PathJoinSubstitution, LaunchConfiguration, Text
 
 def generate_launch_description():
 
-    
-
-
     start_joint_trajectory_action_server_node = Node(
         name="start_joints_trajectory_action_server",
         package="moveit2_actions",
@@ -33,6 +30,6 @@ def generate_launch_description():
 
     return LaunchDescription([
       start_joint_trajectory_action_server_node, 
-      start_joint_trajectory_action_client_node
+    #   start_joint_trajectory_action_client_node
        
     ])

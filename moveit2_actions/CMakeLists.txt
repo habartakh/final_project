@@ -49,6 +49,8 @@ ament_target_dependencies(start_joints_trajectory_action_server
   rclcpp
   moveit_ros_planning_interface
   geometric_shapes
+  rclcpp_action 
+  action_msgs
   # yaml-cpp
 )
 target_link_libraries(start_joints_trajectory_action_server "${cpp_typesupport_target}")
@@ -61,6 +63,7 @@ ament_target_dependencies(start_joints_trajectory_action_client
   moveit_ros_planning_interface
   geometric_shapes
   rclcpp_action 
+  action_msgs
   # yaml-cpp
 )
 target_link_libraries(start_joints_trajectory_action_client "${cpp_typesupport_target}")
