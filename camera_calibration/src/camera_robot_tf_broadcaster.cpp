@@ -9,6 +9,9 @@
 #include <sstream>
 #include <string>
 
+#include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/int16.hpp"
+
 #include "aruco_interfaces/msg/aruco_markers.hpp"
 #include "geometry_msgs/msg/detail/pose__struct.hpp"
 #include "geometry_msgs/msg/pose.hpp"
@@ -16,6 +19,7 @@
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "rclcpp/logging.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/detail/int16__struct.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/exceptions.h"
 #include "tf2_ros/buffer.h"
@@ -55,15 +59,56 @@ public:
         std::bind(&CameraRobotFramePublisher::handle_aruco_pose, this,
                   std::placeholders::_1));
 
+    start_signal_sub = this->create_subscription<std_msgs::msg::Bool>(
+        "start_signal_topic", 10,
+        std::bind(&CameraRobotFramePublisher::start_signal_callback, this,
+                  std::placeholders::_1));
+
+    progress_sub = this->create_subscription<std_msgs::msg::Int16>(
+        "trajectory_progress", 10,
+        std::bind(&CameraRobotFramePublisher::progress_callback, this,
+                  std::placeholders::_1));
+
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(1000), // 1 second interval
         std::bind(&CameraRobotFramePublisher::timer_callback, this));
+
+    // Stop the timer from activating at first
+    timer_->cancel();
 
     RCLCPP_INFO(this->get_logger(),
                 "CameraRobotFramePublisher node initialized!");
   }
 
 private:
+  // Wait till hearing the start signal
+  void start_signal_callback(const std_msgs::msg::Bool::SharedPtr msg) {
+
+    // If The signal was sent
+    if (msg != nullptr) {
+
+      start_signal = true;
+
+      RCLCPP_INFO(this->get_logger(),
+                  "Start signal is heard! Timer will be started");
+
+      // Then start the timer recording the TF values
+      timer_->reset();
+    }
+  }
+
+  // Listen to the stop signal
+  void progress_callback(const std_msgs::msg::Int16::SharedPtr msg) {
+
+    // If The signal was sent
+    if (msg != nullptr && msg->data > 100) {
+
+      stop_signal = true;
+      RCLCPP_INFO(this->get_logger(),
+                  "Start signal is received! Shutting down the node...");
+    }
+  }
+
   // Get the ArUco marker pose from the detection node topic
   void handle_aruco_pose(const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
 
@@ -86,6 +131,13 @@ private:
 
   // Broadcast the TF camera -- base_link every second
   void timer_callback() {
+
+    RCLCPP_INFO(this->get_logger(), "Inside the timer_callback!!");
+
+    // If the stop signal is received, stop the node
+    if (stop_signal) {
+      rclcpp::shutdown();
+    }
 
     //  IMPORTANT: The aruco pose is estimated relative TO the CAMERA frame
     //  We are establishing the TF FROM the base_link so we need to project the
@@ -143,19 +195,6 @@ private:
 
     // Apply correction
     tf_cam_aruco = marker_frame_fix * tf_cam_marker;
-
-    // tf2::Vector3 trans(estimated_aruco_pose.position.x,
-    //                    estimated_aruco_pose.position.y,
-    //                    estimated_aruco_pose.position.z);
-
-    // tf2::Quaternion rot(
-    //     estimated_aruco_pose.orientation.x,
-    //     estimated_aruco_pose.orientation.y,
-    //     estimated_aruco_pose.orientation.z,
-    //     estimated_aruco_pose.orientation.w);
-
-    // tf_cam_aruco.setOrigin(trans);
-    // tf_cam_aruco.setRotation(rot);
 
     // Invert the camera-to-aruco to get aruco-to-camera
     tf2::Transform tf_aruco_cam = tf_cam_aruco.inverse();
@@ -278,6 +317,14 @@ private:
   std::string base_frame;
   std::string camera_frame;
   std::string aruco_frame;
+
+  // Listener to the start signal
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr start_signal_sub;
+  bool start_signal = false;
+
+  // Listener to the stop signal
+  rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr progress_sub;
+  bool stop_signal = false;
 
   // TF listeners Broadcasters
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr

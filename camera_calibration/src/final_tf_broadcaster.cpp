@@ -8,6 +8,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <vector>
 
+#include "std_msgs/msg/bool.hpp"
+
 // This structure stores the TF values compiled in the text file
 struct Pose {
   double x, y, z;
@@ -28,8 +30,7 @@ public:
   FinalTfBroadcaster() : Node("final_tf_broadcaster") {
     broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
-    std::string file_path =
-        this->declare_parameter<std::string>("file_path", "data.txt");
+    file_path = this->declare_parameter<std::string>("file_path", "data.txt");
 
     // The frames are named differently in the real and simulated robots
     base_frame =
@@ -38,20 +39,30 @@ public:
     camera_frame = this->declare_parameter<std::string>(
         "camera_frame", "wrist_rgbd_camera_link");
 
-    if (!readAndAveragePoses(file_path)) {
-      RCLCPP_ERROR(this->get_logger(), "Failed to read or process pose file.");
-      return;
-    }
+    // Only trigger the timer after receiving the start signal
+    start_signal_sub = this->create_subscription<std_msgs::msg::Bool>(
+        "start_tf_broadcast_topic", 10,
+        std::bind(&FinalTfBroadcaster::start_signal_callback, this,
+                  std::placeholders::_1));
 
     // Broadcast the computed base_link -- camera TF periodically
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(500),
         std::bind(&FinalTfBroadcaster::broadcastTransform, this));
+
+    // Stop the timer from activating at first
+    timer_->cancel();
+
+    RCLCPP_INFO(this->get_logger(), "Broadcasting the ArUco TF!");
   }
 
 private:
   std::string base_frame;
   std::string camera_frame;
+  std::string file_path;
+
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr start_signal_sub;
+  bool average_computed = false;
 
   std::shared_ptr<tf2_ros::TransformBroadcaster> broadcaster_;
   geometry_msgs::msg::TransformStamped averaged_tf_;
@@ -59,6 +70,20 @@ private:
 
   std::vector<Eigen::Quaterniond> quaternions;
   std::vector<Eigen::Vector3d> positions;
+
+  // Wait till hearing the start signal
+  void start_signal_callback(const std_msgs::msg::Bool::SharedPtr msg) {
+
+    // If The signal was sent
+    if (msg != nullptr) {
+
+      RCLCPP_INFO(this->get_logger(),
+                  "Start signal is heard! Timer will be started");
+
+      // Then start the timer recording the TF values
+      timer_->reset();
+    }
+  }
 
   // Computes the average of all the TFs collected during the robot trajectory
   bool readAndAveragePoses(const std::string &path) {
@@ -164,8 +189,19 @@ private:
   }
 
   void broadcastTransform() {
+
+    if (!average_computed) {
+      if (!readAndAveragePoses(file_path)) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Failed to read or process pose file.");
+        return;
+      }
+      average_computed = true;
+    }
     averaged_tf_.header.stamp = this->get_clock()->now();
     broadcaster_->sendTransform(averaged_tf_);
+
+    RCLCPP_INFO_ONCE(this->get_logger(), "Broadcasting the final TF...");
   }
 };
 

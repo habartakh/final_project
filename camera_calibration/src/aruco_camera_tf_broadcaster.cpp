@@ -36,8 +36,8 @@ private:
     // NOTE: The /aruco/marker topic publishes the ArUco pose relative to the
     // camera's coordinate system
     t.header.stamp = this->get_clock()->now();
-    t.header.frame_id = "wrist_rgbd_camera_link";
-    t.child_frame_id = "aruco_frame";
+    t.header.frame_id = "D415_link";
+    t.child_frame_id = "detected_aruco_frame";
 
     // Get the ArUco marker position and orientation via the ArUco detection
     // and pose estimation node
