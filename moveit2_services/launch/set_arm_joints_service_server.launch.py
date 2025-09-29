@@ -36,29 +36,7 @@ def generate_launch_description():
     )
 
 
-    set_arm_joints_service_client_node = Node(
-        name="set_arm_joints_service_client",
-        package="moveit2_services",
-        executable="set_arm_joints_service_client",
-        output="screen", 
-         parameters=[
-            moveit_config.robot_description,
-            moveit_config.robot_description_semantic,
-            moveit_config.robot_description_kinematics,
-            {'use_sim_time': use_sim_time},
-        ],                      
-    )
-
-    delayed_client_node = TimerAction(
-        period=10.0,  
-        actions=[
-        set_arm_joints_service_client_node,
-        ])
-
-
     return LaunchDescription([
         use_sim_time_arg,
         set_arm_joints_service_server_node, 
-
-        delayed_client_node,
     ])
