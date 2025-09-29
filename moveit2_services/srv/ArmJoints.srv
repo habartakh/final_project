@@ -1,0 +1,5 @@
+# Request
+std_msgs/Float64MultiArray input_array
+---
+# Response
+bool success
