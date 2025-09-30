@@ -20,7 +20,7 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time')
 
-    moveit_config = MoveItConfigsBuilder("name", package_name="custom_moveit_config").to_moveit_configs()
+    moveit_config = MoveItConfigsBuilder("name", package_name="custom_moveit_pkg_new").to_moveit_configs()
 
     set_arm_joints_service_server_node = Node(
         name="set_arm_joints_service_server",

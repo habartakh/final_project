@@ -9,7 +9,7 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
 
     move_rviz_file_path = os.path.join(
-        get_package_share_directory('custom_moveit_config'),
+        get_package_share_directory('custom_moveit_pkg_new'),
         'launch',
         'moveit_rviz.launch.py'
     )

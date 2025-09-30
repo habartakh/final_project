@@ -11,7 +11,7 @@ from moveit_configs_utils import MoveItConfigsBuilder
 def generate_launch_description():
 
     move_rviz_file_path = os.path.join(
-        get_package_share_directory('custom_moveit_pkg_new'),
+        get_package_share_directory('custom_moveit_config'),
         'launch',
         'moveit_rviz.launch.py'
     )
@@ -23,13 +23,13 @@ def generate_launch_description():
         output="screen", 
     )
 
-    moveit_config = MoveItConfigsBuilder("name", package_name="custom_moveit_pkg_new").to_moveit_configs()
+    moveit_config = MoveItConfigsBuilder("name", package_name="custom_moveit_config").to_moveit_configs()
 
     # The node to move the robo arm
     moveit_cpp_node = Node(
-        name="aruco_visible_trajectory_real",
+        name="aruco_visible_trajectory_real_cartesian",
         package="moveit2_scripts",
-        executable="aruco_visible_trajectory_real",
+        executable="aruco_visible_trajectory_real_cartesian",
         output="screen",
         parameters=[
             moveit_config.robot_description,
