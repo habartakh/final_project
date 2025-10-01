@@ -19,11 +19,6 @@ find_package(yaml-cpp REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(rclcpp_action REQUIRED)
 
-# rosidl_generate_interfaces(${PROJECT_NAME}
-#   "action/SetJointValues.action"
-#   DEPENDENCIES builtin_interfaces
-# )
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -94,6 +89,7 @@ ament_target_dependencies(aruco_visible_trajectory
   yaml-cpp
 )
 
+
 # Trajectory maintaining the ArUco marker visible by the camera in the real world
 add_executable(aruco_visible_trajectory_real src/aruco_visible_trajectory_real.cpp)
 target_include_directories(aruco_visible_trajectory_real PUBLIC include)
@@ -108,6 +104,17 @@ ament_target_dependencies(aruco_visible_trajectory_real
 # Add the linker flag otherwise yaml library wont work
 target_link_libraries(aruco_visible_trajectory_real ${YAML_CPP_LIBRARIES})
 
+# The trajectory pipeline to move the ArUco marker in places visible by the camera in the simulation
+add_executable(aruco_visible_trajectory_real_cartesian src/aruco_visible_trajectory_real_cartesian.cpp)
+target_include_directories(aruco_visible_trajectory_real_cartesian PUBLIC include)
+ament_target_dependencies(aruco_visible_trajectory_real_cartesian
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+  yaml-cpp
+)
+
+
 # Executable to test if the TF is okay or not
 add_executable(test_camera_calibration src/test_camera_calibration.cpp)
 target_include_directories(test_camera_calibration PUBLIC include)
@@ -117,31 +124,6 @@ ament_target_dependencies(test_camera_calibration
   geometric_shapes
 )
 
-# Set Joint values action server executable 
-# rosidl_get_typesupport_target(cpp_typesupport_target
-#   ${PROJECT_NAME} rosidl_typesupport_cpp)
-
-# add_executable(set_arm_joints_action_server src/set_arm_joints_action_server.cpp)
-# target_include_directories(set_arm_joints_action_server PUBLIC include)
-# ament_target_dependencies(set_arm_joints_action_server
-#   rclcpp
-#   moveit_ros_planning_interface
-#   geometric_shapes
-#   yaml-cpp
-# )
-# target_link_libraries(set_arm_joints_action_server "${cpp_typesupport_target}")
-
-# # Set Joint values action client executable 
-# add_executable(set_arm_joints_action_client src/set_arm_joints_action_client.cpp)
-# target_include_directories(set_arm_joints_action_client PUBLIC include)
-# ament_target_dependencies(set_arm_joints_action_client
-#   rclcpp
-#   moveit_ros_planning_interface
-#   geometric_shapes
-#   yaml-cpp
-# )
-# target_link_libraries(set_arm_joints_action_client "${cpp_typesupport_target}")
-
 
 install(TARGETS
    add_objects_planning_scene
@@ -150,9 +132,8 @@ install(TARGETS
    make_aruco_visible
    aruco_visible_trajectory
    aruco_visible_trajectory_real
+   aruco_visible_trajectory_real_cartesian
    test_camera_calibration
-#    set_arm_joints_action_server
-#    set_arm_joints_action_client
    DESTINATION lib/${PROJECT_NAME}
 )
 
