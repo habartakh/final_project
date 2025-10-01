@@ -62,10 +62,36 @@ ament_target_dependencies(set_arm_joints_service_client
 )
 target_link_libraries(set_arm_joints_service_client "${cpp_typesupport_target}")
 
+# Service Server to make end_effector go to goal pose 
+add_executable(go_to_pose_service_server src/go_to_pose_service_server.cpp)
+target_include_directories(go_to_pose_service_server PUBLIC include)
+ament_target_dependencies(go_to_pose_service_server
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+  rclcpp_action 
+  action_msgs
+)
+target_link_libraries(go_to_pose_service_server "${cpp_typesupport_target}")
+
+# Service Client to make end_effector go to goal pose 
+add_executable(go_to_pose_service_client src/go_to_pose_service_client.cpp)
+target_include_directories(go_to_pose_service_client PUBLIC include)
+ament_target_dependencies(go_to_pose_service_client
+  rclcpp
+  moveit_ros_planning_interface
+  geometric_shapes
+  rclcpp_action 
+  action_msgs
+)
+target_link_libraries(go_to_pose_service_client "${cpp_typesupport_target}")
+
 
 install(TARGETS
    set_arm_joints_service_server
    set_arm_joints_service_client
+   go_to_pose_service_server
+   go_to_pose_service_client
    DESTINATION lib/${PROJECT_NAME}
 )
 
