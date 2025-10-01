@@ -42,7 +42,21 @@ class CircleDetector(Node):
         self.depth_image = None
         self.rgb_image = None
 
+        # For tracking circles consistently 
+        self.tracked_circles = {}  # key: circle_id, value: 3D position (np.array)
+        self.next_circle_id = 1
+
         self.get_logger().info(f"Circle Detector Node Initialised!")
+
+    # Try to find the same circle in the successive frames
+    def match_circle(self, new_position, threshold=0.03):
+
+        for cid, old_pos in self.tracked_circles.items():
+            dist = np.linalg.norm(new_position - old_pos)
+            if dist < threshold:
+                return cid
+        return None
+
 
     def camera_info_callback(self, msg):
         self.camera_model.fromCameraInfo(msg)
@@ -77,11 +91,6 @@ class CircleDetector(Node):
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
             for i, (x, y, r) in enumerate(circles):
-                
-                label = f"circle_{i+1}"
-                cv2.putText(self.rgb_image, label, (x - 10, y - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-                # Draw circle for visualization
-                cv2.circle(self.rgb_image, (x, y), r, (0, 255, 0), 2)
 
                 # Depth at (x, y)
                 if y < self.depth_image.shape[0] and x < self.depth_image.shape[1]:
@@ -92,19 +101,35 @@ class CircleDetector(Node):
                         ray = self.camera_model.projectPixelTo3dRay((x, y))
                         point_3d = np.array(ray) * depth
 
+                        # Track consistent circle ID
+                        matched_id = self.match_circle(point_3d)
+                        if matched_id is not None:
+                            circle_id = matched_id
+                        else:
+                            circle_id = self.next_circle_id
+                            self.next_circle_id += 1
+
+                        self.tracked_circles[circle_id] = point_3d
+                        label = f"c_{circle_id}"
+
+                        # Draw label and circle
+                        cv2.putText(self.rgb_image, label, (x - 10, y - 10),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                        cv2.circle(self.rgb_image, (x, y), r, (0, 255, 0), 2)
+
+                        # Create PoseStamped message
                         pose_stamped = PoseStamped()
                         pose_stamped.header = msg.header
                         pose_stamped.pose.position.x = point_3d[0]
                         pose_stamped.pose.position.y = point_3d[1]
                         pose_stamped.pose.position.z = point_3d[2]
 
+                        # Add label to pose estimation message
                         circle_msg = CirclePose()
                         circle_msg.label = label
                         circle_msg.pose = pose_stamped
-
                         circle_array_msg.circles.append(circle_msg)
 
-                        # self.get_logger().info(f"Detected 3D circle at: {point_3d}")
 
         # Convert OpenCV image to ROS Image message
         output_msg = self.bridge.cv2_to_imgmsg(self.rgb_image, encoding='bgr8')
