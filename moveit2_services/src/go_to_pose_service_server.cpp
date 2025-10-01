@@ -41,9 +41,18 @@ public:
         move_group_->getCurrentState()->getJointModelGroup(PLANNING_GROUP);
 
     // Change the reference frame to the camera_frame
-    std::string reference_frame = "D415_color_optical_frame";
+
+    // Declare parameter with default
+    this->declare_parameter<std::string>("reference_frame",
+                                         "D415_color_optical_frame");
+
+    // Get parameter value
+    std::string reference_frame =
+        this->get_parameter("reference_frame").as_string();
+
     move_group_->setPoseReferenceFrame(reference_frame);
-    RCLCPP_INFO(this->get_logger(), "Reference frame set to: %s", reference_frame.c_str());
+    RCLCPP_INFO(this->get_logger(), "Reference frame set to: %s",
+                reference_frame.c_str());
 
     // Change the end-effector frame
     // Get the current end-effector link
