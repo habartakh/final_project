@@ -13,6 +13,8 @@ from image_geometry import PinholeCameraModel
 
 from circle_pattern_pose_estimation.msg import CirclePose, CirclePoseArray
 
+from std_msgs.msg import Bool
+
 
 class CircleDetector(Node):
     def __init__(self):
@@ -46,7 +48,16 @@ class CircleDetector(Node):
         self.tracked_circles = {}  # key: circle_id, value: 3D position (np.array)
         self.next_circle_id = 1
 
-        self.get_logger().info(f"Circle Detector Node Initialised!")
+        # Setup a flag to start the detection upon a click on the webpage 
+        self.detection_enabled = False
+        self.start_detection_sub = self.create_subscription(
+            Bool,
+            '/start_circle_detection',
+            self.start_detection_callback,
+            10
+        )
+
+        self.get_logger().info(f"Circle Detector Node Initialised! Waiting for signal to start detection...")
 
     # Try to find the same circle in the successive frames
     def match_circle(self, new_position, threshold=0.03):
@@ -57,6 +68,11 @@ class CircleDetector(Node):
                 return cid
         return None
 
+    def start_detection_callback(self, msg: Bool):
+        self.detection_enabled = msg.data
+        state = "enabled" if msg.data else "disabled"
+        self.get_logger().info(f"Circle detection {state}.")
+
 
     def camera_info_callback(self, msg):
         self.camera_model.fromCameraInfo(msg)
@@ -66,7 +82,7 @@ class CircleDetector(Node):
         self.depth_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
 
     def image_callback(self, msg):
-        if not self.camera_info_received or self.depth_image is None:
+        if not self.camera_info_received or self.depth_image is None or not self.detection_enabled:
             return
 
         self.rgb_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -81,8 +97,8 @@ class CircleDetector(Node):
             minDist=20,
             param1=50,
             param2=30,
-            minRadius=5,
-            maxRadius=13
+            minRadius=1, # 5
+            maxRadius=50 # 13
         )
 
         circle_array_msg  = CirclePoseArray()
