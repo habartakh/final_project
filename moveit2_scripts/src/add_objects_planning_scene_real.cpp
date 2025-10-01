@@ -106,6 +106,35 @@ int main(int argc, char **argv) {
     return collision_object_1;
   }();
 
+  // Camera
+  auto const collision_object_camera = [frame_id =
+                                            move_group_arm.getPlanningFrame()] {
+    moveit_msgs::msg::CollisionObject collision_object_1;
+    collision_object_1.header.frame_id = frame_id;
+    collision_object_1.id = "camera";
+    shape_msgs::msg::SolidPrimitive primitive_1;
+
+    // Define the size of the box in meters
+    primitive_1.type = primitive_1.BOX;
+    primitive_1.dimensions.resize(3);
+    primitive_1.dimensions[primitive_1.BOX_X] = 0.3;
+    primitive_1.dimensions[primitive_1.BOX_Y] = 0.09;
+    primitive_1.dimensions[primitive_1.BOX_Z] = 0.3;
+
+    // Define the pose of the box (relative to the frame_id)
+    geometry_msgs::msg::Pose box_pose_1;
+    box_pose_1.orientation.w = 1.0;
+    box_pose_1.position.x = -0.4;
+    box_pose_1.position.y = -0.15;
+    box_pose_1.position.z = 0.61;
+
+    collision_object_1.primitives.push_back(primitive_1);
+    collision_object_1.primitive_poses.push_back(box_pose_1);
+    collision_object_1.operation = collision_object_1.ADD;
+
+    return collision_object_1;
+  }();
+
   // Coffee machine base
   auto const collision_object_coffee_machine_base =
       [frame_id = move_group_arm.getPlanningFrame()] {
@@ -325,6 +354,7 @@ int main(int argc, char **argv) {
 
   planning_scene_interface.applyCollisionObject(collision_object_table);
   planning_scene_interface.applyCollisionObject(collision_object_wall);
+  planning_scene_interface.applyCollisionObject(collision_object_camera);
   planning_scene_interface.applyCollisionObject(
       collision_object_coffee_machine_base);
   planning_scene_interface.applyCollisionObject(
