@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
     geometry_msgs::msg::Pose box_pose_1;
     box_pose_1.orientation.w = 1.0;
     box_pose_1.position.x = -0.4;
-    box_pose_1.position.y = -0.15;
+    box_pose_1.position.y = -0.25;
     box_pose_1.position.z = 0.61;
 
     collision_object_1.primitives.push_back(primitive_1);
