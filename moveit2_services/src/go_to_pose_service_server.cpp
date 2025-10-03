@@ -111,7 +111,7 @@ private:
 
     if (success) {
       RCLCPP_INFO(this->get_logger(), "Planning successful. Executing...");
-      // move_group_->execute(plan);
+      move_group_->execute(plan);
       response->success = true;
     } else {
       RCLCPP_ERROR(this->get_logger(), "Planning failed.");
