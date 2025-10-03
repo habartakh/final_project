@@ -53,7 +53,8 @@ public:
     // Stop the timer from activating at first
     timer_->cancel();
 
-    RCLCPP_INFO(this->get_logger(), "Broadcasting the ArUco TF!");
+    RCLCPP_INFO(this->get_logger(),
+                "Node Launched. Waiting for the start signal....");
   }
 
 private:
@@ -77,8 +78,8 @@ private:
     // If The signal was sent
     if (msg != nullptr) {
 
-      RCLCPP_INFO(this->get_logger(),
-                  "Start signal is heard! Timer will be started");
+      RCLCPP_INFO_ONCE(this->get_logger(),
+                       "Start signal is heard! Timer will be started");
 
       // Then start the timer recording the TF values
       timer_->reset();

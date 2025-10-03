@@ -97,8 +97,8 @@ class CircleDetector(Node):
             minDist=20,
             param1=50,
             param2=30,
-            minRadius=1, # 5
-            maxRadius=50 # 13
+            minRadius=5, # 1
+            maxRadius=13 # 50
         )
 
         circle_array_msg  = CirclePoseArray()

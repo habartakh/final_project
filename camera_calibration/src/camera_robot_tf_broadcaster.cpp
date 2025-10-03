@@ -182,7 +182,9 @@ private:
     // Compute the median of the detected aruco poses to use next
     // This guarentees a more robust estimation as aruco poses are easily
     // influenced by external factors
-    geometry_msgs::msg::Pose filtered_pose = compute_median_pose();
+    // geometry_msgs::msg::Pose filtered_pose = compute_median_pose();
+
+    geometry_msgs::msg::Pose filtered_pose = estimated_aruco_pose;
 
     // Build tf2 transform from OpenCV pose
     tf2::Transform tf_cam_marker;
@@ -345,7 +347,7 @@ private:
 
   // Store the N last aruco poses in a buffer to compute their median
   std::deque<geometry_msgs::msg::Pose> pose_buffer_;
-  const size_t pose_buffer_size_ = 20;
+  const size_t pose_buffer_size_ = 10;
 };
 
 int main(int argc, char *argv[]) {
