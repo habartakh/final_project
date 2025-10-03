@@ -11,7 +11,7 @@ from moveit_configs_utils import MoveItConfigsBuilder
 def generate_launch_description():
 
     move_rviz_file_path = os.path.join(
-        get_package_share_directory('custom_moveit_config'),
+        get_package_share_directory('custom_moveit_pkg_new'),
         'launch',
         'moveit_rviz.launch.py'
     )
@@ -23,7 +23,7 @@ def generate_launch_description():
         output="screen", 
     )
 
-    moveit_config = MoveItConfigsBuilder("name", package_name="custom_moveit_config").to_moveit_configs()
+    moveit_config = MoveItConfigsBuilder("name", package_name="custom_moveit_pkg_new").to_moveit_configs()
 
     # The node to move the robo arm
     moveit_cpp_node = Node(
@@ -50,10 +50,11 @@ def generate_launch_description():
 
 
     return LaunchDescription([
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(move_rviz_file_path)
-        ),
-        add_objects_planning_scene_real_node,
-        # moveit_cpp_node,
-        delayed_moveit_node,
+        moveit_cpp_node,
+        # IncludeLaunchDescription(
+        #     PythonLaunchDescriptionSource(move_rviz_file_path)
+        # ),
+        # add_objects_planning_scene_real_node,
+        # # moveit_cpp_node,
+        # delayed_moveit_node,
     ])

@@ -11,5 +11,5 @@ trajectory_joints:
     joint_values: [0.12, -3.08, -0.14, -1.22, 2.6, -1.60]
   # - id: aruco_6
   #   joint_values: [0.08, -2.46, -1.47, -0.57, 2.62, -1.38]
-  - id: aruco_7
-    joint_values: [0.12, -2.25, -1.99, -0.17, 2.6, -1.27]
+  # - id: aruco_7 # No longer goord for new robot
+  #   joint_values: [0.12, -2.25, -1.99, -0.17, 2.6, -1.27]
