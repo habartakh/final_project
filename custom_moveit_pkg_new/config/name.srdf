@@ -41,6 +41,54 @@
         <joint name="wrist_3_joint" value="1.57"/>
     </group_state>
     <group_state name="aruco_1" group="ur_manipulator">
+        <joint name="shoulder_pan_joint" value="0.08"/>
+        <joint name="shoulder_lift_joint" value="-2.70"/>
+        <joint name="elbow_joint" value="-1.39"/>
+        <joint name="wrist_1_joint" value="-0.38"/>
+        <joint name="wrist_2_joint" value="2.61"/>
+        <joint name="wrist_3_joint" value="-1.37"/>
+    </group_state>
+    <group_state name="aruco_2" group="ur_manipulator">
+        <joint name="shoulder_pan_joint" value="0.06"/>
+        <joint name="shoulder_lift_joint" value="-2.96"/>
+        <joint name="elbow_joint" value="-0.73"/>
+        <joint name="wrist_1_joint" value="-0.82"/>
+        <joint name="wrist_2_joint" value="2.61"/>
+        <joint name="wrist_3_joint" value="-1.37"/>
+    </group_state>
+    <group_state name="aruco_3" group="ur_manipulator">
+        <joint name="shoulder_pan_joint" value="0.06"/>
+        <joint name="shoulder_lift_joint" value="-3.15"/>
+        <joint name="elbow_joint" value="-0.27"/>
+        <joint name="wrist_1_joint" value="-1.08"/>
+        <joint name="wrist_2_joint" value="2.61"/>
+        <joint name="wrist_3_joint" value="-1.37"/>
+    </group_state>
+    <group_state name="aruco_4" group="ur_manipulator">
+        <joint name="shoulder_pan_joint" value="0.05"/>
+        <joint name="shoulder_lift_joint" value="-2.54"/>
+        <joint name="elbow_joint" value="-1.74"/>
+        <joint name="wrist_1_joint" value="-0.24"/>
+        <joint name="wrist_2_joint" value="2.61"/>
+        <joint name="wrist_3_joint" value="-1.44"/>
+    </group_state>
+    <group_state name="aruco_5" group="ur_manipulator">
+        <joint name="shoulder_pan_joint" value="0.33"/>
+        <joint name="shoulder_lift_joint" value="-2.91"/>
+        <joint name="elbow_joint" value="-1.57"/>
+        <joint name="wrist_1_joint" value="0.33"/>
+        <joint name="wrist_2_joint" value="2.53"/>
+        <joint name="wrist_3_joint" value="-0.96"/>
+    </group_state>
+    <group_state name="aruco_6" group="ur_manipulator">
+        <joint name="shoulder_pan_joint" value="0.14"/>
+        <joint name="shoulder_lift_joint" value="-2.79"/>
+        <joint name="elbow_joint" value="-1.36"/>
+        <joint name="wrist_1_joint" value="-0.23"/>
+        <joint name="wrist_2_joint" value="2.6"/>
+        <joint name="wrist_3_joint" value="-1.26"/>
+    </group_state>
+    <group_state name="aruco_21" group="ur_manipulator">
         <joint name="elbow_joint" value="-1.87"/>
         <joint name="shoulder_lift_joint" value="-2.55"/>
         <joint name="shoulder_pan_joint" value="0.28"/>
@@ -48,7 +96,7 @@
         <joint name="wrist_2_joint" value="2.55"/>
         <joint name="wrist_3_joint" value="-1.34"/>
     </group_state>
-    <group_state name="aruco_2" group="ur_manipulator">
+    <group_state name="aruco_22" group="ur_manipulator">
         <joint name="shoulder_pan_joint" value="0.19"/>
         <joint name="shoulder_lift_joint" value="-2.6"/>
         <joint name="elbow_joint" value="-1.31"/>
@@ -56,7 +104,7 @@
         <joint name="wrist_2_joint" value="2.58"/>
         <joint name="wrist_3_joint" value="-1.48"/>
     </group_state>
-    <group_state name="aruco_3" group="ur_manipulator">
+    <group_state name="aruco_23" group="ur_manipulator">
         <joint name="shoulder_pan_joint" value="0.23"/>
         <joint name="shoulder_lift_joint" value="-3.02"/>
         <joint name="elbow_joint" value="-0.26"/>
@@ -64,7 +112,7 @@
         <joint name="wrist_2_joint" value="2.56"/>
         <joint name="wrist_3_joint" value="-1.41"/>
     </group_state>
-    <group_state name="aruco_4" group="ur_manipulator">
+    <group_state name="aruco_24" group="ur_manipulator">
         <joint name="shoulder_pan_joint" value="0.24"/>
         <joint name="shoulder_lift_joint" value="-2.7"/>
         <joint name="elbow_joint" value="-1.08"/>
@@ -72,7 +120,7 @@
         <joint name="wrist_2_joint" value="2.56"/>
         <joint name="wrist_3_joint" value="-1.40"/>
     </group_state>
-    <group_state name="aruco_5" group="ur_manipulator">
+    <group_state name="aruco_25" group="ur_manipulator">
         <joint name="shoulder_pan_joint" value="0.12"/>
         <joint name="shoulder_lift_joint" value="-3.08"/>
         <joint name="elbow_joint" value="-0.14"/>
@@ -80,7 +128,7 @@
         <joint name="wrist_2_joint" value="2.6"/>
         <joint name="wrist_3_joint" value="-1.6"/>
     </group_state>
-    <group_state name="aruco_6" group="ur_manipulator">
+    <group_state name="aruco_26" group="ur_manipulator">
         <joint name="shoulder_pan_joint" value="0.08"/>
         <joint name="shoulder_lift_joint" value="-2.46"/>
         <joint name="elbow_joint" value="-1.47"/>
@@ -88,7 +136,7 @@
         <joint name="wrist_2_joint" value="2.62"/>
         <joint name="wrist_3_joint" value="-1.38"/>
     </group_state>
-    <group_state name="aruco_7" group="ur_manipulator">
+    <group_state name="aruco_27" group="ur_manipulator">
         <joint name="shoulder_pan_joint" value="0.12"/>
         <joint name="shoulder_lift_joint" value="-2.25"/>
         <joint name="elbow_joint" value="-1.99"/>
@@ -96,6 +144,7 @@
         <joint name="wrist_2_joint" value="2.6"/>
         <joint name="wrist_3_joint" value="-1.27"/>
     </group_state>
+
     <group_state name="gripper_open" group="gripper">
         <joint name="robotiq_85_left_knuckle_joint" value="0"/>
     </group_state>
