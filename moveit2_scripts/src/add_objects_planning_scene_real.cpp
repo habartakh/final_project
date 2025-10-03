@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
     primitive_1.type = primitive_1.BOX;
     primitive_1.dimensions.resize(3);
     primitive_1.dimensions[primitive_1.BOX_X] = 0.3;
-    primitive_1.dimensions[primitive_1.BOX_Y] = 0.09;
+    primitive_1.dimensions[primitive_1.BOX_Y] = 0.13;
     primitive_1.dimensions[primitive_1.BOX_Z] = 0.3;
 
     // Define the pose of the box (relative to the frame_id)
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     box_pose_1.orientation.w = 1.0;
     box_pose_1.position.x = -0.4;
     box_pose_1.position.y = -0.25;
-    box_pose_1.position.z = 0.61;
+    box_pose_1.position.z = 0.38;
 
     collision_object_1.primitives.push_back(primitive_1);
     collision_object_1.primitive_poses.push_back(box_pose_1);
