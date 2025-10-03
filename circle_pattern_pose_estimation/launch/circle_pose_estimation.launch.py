@@ -66,7 +66,7 @@ def generate_launch_description():
 
 
     return LaunchDescription([
-          rviz2_node,
+        # rviz2_node,
         image_topic_arg,
         depth_image_topic_arg,
         camera_info_topic_arg,

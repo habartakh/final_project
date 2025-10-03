@@ -70,7 +70,7 @@ def generate_launch_description():
         camera_info_topic_arg,
         camera_frame_arg,
 
-        rviz2_node,
+        # rviz2_node,
         aruco_detector_node, 
        
     ])
